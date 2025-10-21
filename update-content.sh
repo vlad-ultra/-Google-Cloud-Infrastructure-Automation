@@ -22,17 +22,17 @@ echo "Web2 Internal IP: $WEB2_INTERNAL_IP"
 echo ""
 echo "📝 Updating Web1 HTML..."
 if [ -f "web-apps/web1.html" ]; then
-    gcloud compute scp web-apps/web1.html web1-prod:/tmp/web1.html --zone=europe-west1-b
+    gcloud compute scp web-apps/web1.html web1-prod:~/web1.html --zone=europe-west1-b
     gcloud compute ssh web1-prod --zone=europe-west1-b --command="
         # Remove old content
         sudo rm -f /var/www/html/index.html
         sudo rm -f /var/www/html/index.html.*
         # Copy new content
-        sudo cp /tmp/web1.html /var/www/html/index.html
+        sudo cp ~/web1.html /var/www/html/index.html
         sudo chown root:root /var/www/html/index.html
         sudo chmod 644 /var/www/html/index.html
         # Clean up temp file
-        rm -f /tmp/web1.html
+        rm -f ~/web1.html
         # Clear nginx cache and restart
         sudo nginx -s stop || true
         sudo systemctl start nginx
@@ -46,17 +46,17 @@ fi
 # Update web2 HTML
 echo "📝 Updating Web2 HTML..."
 if [ -f "web-apps/web2.html" ]; then
-    gcloud compute scp web-apps/web2.html web2-prod:/tmp/web2.html --zone=europe-west1-b
+    gcloud compute scp web-apps/web2.html web2-prod:~/web2.html --zone=europe-west1-b
     gcloud compute ssh web2-prod --zone=europe-west1-b --command="
         # Remove old content
         sudo rm -f /var/www/html/index.html
         sudo rm -f /var/www/html/index.html.*
         # Copy new content
-        sudo cp /tmp/web2.html /var/www/html/index.html
+        sudo cp ~/web2.html /var/www/html/index.html
         sudo chown root:root /var/www/html/index.html
         sudo chmod 644 /var/www/html/index.html
         # Clean up temp file
-        rm -f /tmp/web2.html
+        rm -f ~/web2.html
         # Clear nginx cache and restart
         sudo nginx -s stop || true
         sudo systemctl start nginx
@@ -80,17 +80,17 @@ gcloud compute ssh haproxy-prod --zone=europe-west1-b  --command="
 # Update HAProxy dashboard
 echo "📝 Updating HAProxy dashboard..."
 if [ -f "web-apps/haproxy.html" ]; then
-    gcloud compute scp web-apps/haproxy.html haproxy-prod:/tmp/haproxy.html --zone=europe-west1-b
+    gcloud compute scp web-apps/haproxy.html haproxy-prod:~/haproxy.html --zone=europe-west1-b
     gcloud compute ssh haproxy-prod --zone=europe-west1-b --command="
         # Remove old content
         sudo rm -f /var/www/html/index.html
         sudo rm -f /var/www/html/index.html.*
         # Copy new content
-        sudo cp /tmp/haproxy.html /var/www/html/index.html
+        sudo cp ~/haproxy.html /var/www/html/index.html
         sudo chown root:root /var/www/html/index.html
         sudo chmod 644 /var/www/html/index.html
         # Clean up temp file
-        rm -f /tmp/haproxy.html
+        rm -f ~/haproxy.html
         # Clear nginx cache and restart
         sudo nginx -s stop || true
         sudo systemctl start nginx
