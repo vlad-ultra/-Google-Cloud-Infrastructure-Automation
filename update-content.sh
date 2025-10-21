@@ -22,13 +22,14 @@ echo "Web2 Internal IP: $WEB2_INTERNAL_IP"
 echo ""
 echo "📝 Updating Web1 HTML..."
 if [ -f "web-apps/web1.html" ]; then
-    gcloud compute scp web-apps/web1.html web1-prod:/home/vladultra777/web1.html --zone=europe-west1-b
     gcloud compute ssh web1-prod --zone=europe-west1-b --command="
         # Remove old content
         sudo rm -f /var/www/html/index.html
         sudo rm -f /var/www/html/index.html.*
-        # Copy new content
-        sudo cp /home/vladultra777/web1.html /var/www/html/index.html
+    "
+    gcloud compute scp web-apps/web1.html web1-prod:/var/www/html/index.html --zone=europe-west1-b
+    gcloud compute ssh web1-prod --zone=europe-west1-b --command="
+        # Set proper permissions
         sudo chown root:root /var/www/html/index.html
         sudo chmod 644 /var/www/html/index.html
         # Clear nginx cache and restart
@@ -44,13 +45,14 @@ fi
 # Update web2 HTML
 echo "📝 Updating Web2 HTML..."
 if [ -f "web-apps/web2.html" ]; then
-    gcloud compute scp web-apps/web2.html web2-prod:/home/vladultra777/web2.html --zone=europe-west1-b
     gcloud compute ssh web2-prod --zone=europe-west1-b --command="
         # Remove old content
         sudo rm -f /var/www/html/index.html
         sudo rm -f /var/www/html/index.html.*
-        # Copy new content
-        sudo cp /home/vladultra777/web2.html /var/www/html/index.html
+    "
+    gcloud compute scp web-apps/web2.html web2-prod:/var/www/html/index.html --zone=europe-west1-b
+    gcloud compute ssh web2-prod --zone=europe-west1-b --command="
+        # Set proper permissions
         sudo chown root:root /var/www/html/index.html
         sudo chmod 644 /var/www/html/index.html
         # Clear nginx cache and restart
@@ -76,13 +78,14 @@ gcloud compute ssh haproxy-prod --zone=europe-west1-b  --command="
 # Update HAProxy dashboard
 echo "📝 Updating HAProxy dashboard..."
 if [ -f "web-apps/haproxy.html" ]; then
-    gcloud compute scp web-apps/haproxy.html haproxy-prod:/home/vladultra777/haproxy.html --zone=europe-west1-b
     gcloud compute ssh haproxy-prod --zone=europe-west1-b --command="
         # Remove old content
         sudo rm -f /var/www/html/index.html
         sudo rm -f /var/www/html/index.html.*
-        # Copy new content
-        sudo cp /home/vladultra777/haproxy.html /var/www/html/index.html
+    "
+    gcloud compute scp web-apps/haproxy.html haproxy-prod:/var/www/html/index.html --zone=europe-west1-b
+    gcloud compute ssh haproxy-prod --zone=europe-west1-b --command="
+        # Set proper permissions
         sudo chown root:root /var/www/html/index.html
         sudo chmod 644 /var/www/html/index.html
         # Clear nginx cache and restart
