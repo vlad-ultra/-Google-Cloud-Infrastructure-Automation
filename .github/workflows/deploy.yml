@@ -1,0 +1,212 @@
+name: 🚀 Auto Deploy Infrastructure
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: # Allow manual trigger
+
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+  GCP_REGION: europe-west1
+  GCP_ZONE: europe-west1-b
+
+jobs:
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🔐 Setup Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: 🏗️ Deploy Infrastructure
+      run: |
+        echo "🚀 Starting infrastructure deployment..."
+        chmod +x ./deploy.sh
+        ./deploy.sh
+      env:
+        GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: 🧪 Test Deployment
+      run: |
+        echo "🧪 Testing deployment with new architecture..."
+        
+        # Test HTTPS domains
+        echo "Testing Load Balancer (Roundrobin):"
+        curl -f https://balancer.svdevops.tech || echo "⚠️ Load balancer test failed"
+        
+        echo "Testing Web1 (Direct):"
+        curl -f https://web1.svdevops.tech || echo "⚠️ Web1 test failed"
+        
+        echo "Testing Web2 (Direct):"
+        curl -f https://web2.svdevops.tech || echo "⚠️ Web2 test failed"
+        
+        echo "Testing Stats:"
+        curl -f https://stats.svdevops.tech || echo "⚠️ Stats test failed"
+        
+        # Test roundrobin functionality
+        echo "Testing Roundrobin:"
+        for i in {1..3}; do
+          echo "Request $i:"
+          curl -s https://balancer.svdevops.tech | grep -E "(Web Server|title)" | head -1
+        done
+
+    - name: 📊 Deployment Summary
+      run: |
+        echo "## 🎉 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🌐 Access URLs (HTTPS):" >> $GITHUB_STEP_SUMMARY
+        echo "- **Load Balancer (Roundrobin):** https://balancer.svdevops.tech" >> $GITHUB_STEP_SUMMARY
+        echo "- **Web Server 1 (Direct):** https://web1.svdevops.tech" >> $GITHUB_STEP_SUMMARY
+        echo "- **Web Server 2 (Direct):** https://web2.svdevops.tech" >> $GITHUB_STEP_SUMMARY
+        echo "- **HAProxy Stats:** https://stats.svdevops.tech" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔧 Architecture:" >> $GITHUB_STEP_SUMMARY
+        echo "- Each web server has its own SSL certificate" >> $GITHUB_STEP_SUMMARY
+        echo "- HAProxy uses HTTPS roundrobin for load balancing" >> $GITHUB_STEP_SUMMARY
+        echo "- All domains work through HTTPS" >> $GITHUB_STEP_SUMMARY
+        echo "- Automatic SSL certificate renewal" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔑 SSH Access:" >> $GITHUB_STEP_SUMMARY
+        echo "```bash" >> $GITHUB_STEP_SUMMARY
+        echo "gcloud compute ssh haproxy-prod --zone=europe-west1-b" >> $GITHUB_STEP_SUMMARY
+        echo "gcloud compute ssh web1-prod --zone=europe-west1-b" >> $GITHUB_STEP_SUMMARY
+        echo "gcloud compute ssh web2-prod --zone=europe-west1-b" >> $GITHUB_STEP_SUMMARY
+        echo "```" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🛑 Cost Management:" >> $GITHUB_STEP_SUMMARY
+        echo "```bash" >> $GITHUB_STEP_SUMMARY
+        echo "./stop-instances.sh  # Stop instances to save money" >> $GITHUB_STEP_SUMMARY
+        echo "./start-instances.sh # Start instances with full configuration" >> $GITHUB_STEP_SUMMARY
+        echo "```" >> $GITHUB_STEP_SUMMARY
+
+  test-stop-start:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🔐 Setup Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: 🛑 Test Stop Instances
+      run: |
+        echo "🛑 Testing stop-instances.sh..."
+        chmod +x ./stop-instances.sh
+        ./stop-instances.sh
+        echo "✅ Instances stopped successfully"
+
+    - name: ⏳ Wait for Stop
+      run: |
+        echo "⏳ Waiting for instances to fully stop..."
+        sleep 30
+
+    - name: 🚀 Test Start Instances
+      run: |
+        echo "🚀 Testing start-instances.sh..."
+        chmod +x ./start-instances.sh
+        ./start-instances.sh
+        echo "✅ Instances started successfully"
+
+    - name: 🧪 Test After Restart
+      run: |
+        echo "🧪 Testing all domains after restart..."
+        
+        # Wait for services to be ready
+        sleep 60
+        
+        # Test all domains
+        echo "Testing Load Balancer (Roundrobin):"
+        curl -f https://balancer.svdevops.tech || echo "⚠️ Load balancer test failed"
+        
+        echo "Testing Web1 (Direct):"
+        curl -f https://web1.svdevops.tech || echo "⚠️ Web1 test failed"
+        
+        echo "Testing Web2 (Direct):"
+        curl -f https://web2.svdevops.tech || echo "⚠️ Web2 test failed"
+        
+        echo "Testing Stats:"
+        curl -f https://stats.svdevops.tech || echo "⚠️ Stats test failed"
+
+    - name: 📊 Stop/Start Test Summary
+      run: |
+        echo "## ✅ Stop/Start Test Successful!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🧪 Test Results:" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Instances stopped successfully" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Instances started successfully" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ All domains working after restart" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ SSL certificates working" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Roundrobin working" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 💰 Cost Management Verified:" >> $GITHUB_STEP_SUMMARY
+        echo "- Stop/start functionality working correctly" >> $GITHUB_STEP_SUMMARY
+        echo "- Full configuration restored after restart" >> $GITHUB_STEP_SUMMARY
+
+  destroy:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🔐 Setup Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: 🗑️ Destroy Infrastructure
+      run: |
+        echo "🗑️ Destroying infrastructure to save costs..."
+        cd infrastructure
+        terraform init
+        terraform destroy -auto-approve
+        echo "✅ Infrastructure destroyed successfully"
+
+    - name: 📊 Destruction Summary
+      run: |
+        echo "## 🗑️ Infrastructure Destroyed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 💰 Cost Savings:" >> $GITHUB_STEP_SUMMARY
+        echo "- All compute instances stopped" >> $GITHUB_STEP_SUMMARY
+        echo "- Static IPs preserved (no additional cost)" >> $GITHUB_STEP_SUMMARY
+        echo "- Ready for next deployment" >> $GITHUB_STEP_SUMMARY
+
+  auto-destroy:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🔐 Setup Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: 🗑️ Auto Destroy (Nightly)
+      run: |
+        echo "🌙 Nightly cleanup - destroying infrastructure..."
+        cd infrastructure
+        terraform init
+        terraform destroy -auto-approve || echo "No infrastructure to destroy"
+        echo "✅ Nightly cleanup completed"

@@ -1,0 +1,24 @@
+# Terraform Variables Configuration
+
+# Required: Your GCP Project ID
+project_id = "your-project-id-here"
+
+# Optional: Region and Zone (defaults to Europe)
+region = "europe-west1"
+zone   = "europe-west1-b"
+
+# Optional: Environment name
+environment = "prod"
+
+# Optional: Machine type (e2-micro is free tier eligible)
+machine_type = "e2-micro"
+
+# Optional: Number of web servers (default: 2)
+web_server_count = 2
+
+# Optional: Network configuration
+network_cidr = "10.0.0.0/24"
+
+# Optional: Internal IPs for servers
+web_server_ips = ["10.0.0.10", "10.0.0.11"]
+haproxy_ip     = "10.0.0.12"

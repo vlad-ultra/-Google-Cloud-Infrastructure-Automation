@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Server 1 - DevOps Master System v.3.0</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .container {
+            text-align: center;
+            max-width: 600px;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .title {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            border-radius: 25px;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+        
+        .info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .label {
+            opacity: 0.8;
+        }
+        
+        .value {
+            font-weight: 600;
+        }
+        
+        .footer {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-top: 2rem;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🚀</div>
+        <h1 class="title">Web Server 1</h1>
+        <p class="subtitle">DevOps Master System v.3.0</p>
+        
+        <div class="status pulse">🟢 Online & Ready</div>
+        
+        <div class="info">
+            <div class="info-item">
+                <span class="label">Server ID:</span>
+                <span class="value">web1-prod</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Status:</span>
+                <span class="value">Active</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Load Balancer:</span>
+                <span class="value">HAProxy</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Deployed by:</span>
+                <span class="value">Vlad Stadnyk - DevOps</span>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>DevOps Master System initiated by Vlad Stadnyk - DevOps</p>
+            <p>Infrastructure as Code with Terraform & Google Cloud</p>
+        </div>
+    </div>
+</body>
+</html>

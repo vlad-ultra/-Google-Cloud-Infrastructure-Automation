@@ -1,0 +1,151 @@
+name: 📊 Monitor Infrastructure
+
+on:
+  schedule:
+    - cron: '*/15 * * * *' # Every 15 minutes
+  workflow_dispatch: # Allow manual trigger
+
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+  GCP_REGION: europe-west1
+  GCP_ZONE: europe-west1-b
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🔐 Setup Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: 🏥 Health Check
+      id: health_check
+      run: |
+        echo "🏥 Performing health check..."
+        
+        # Check if instances are running
+        echo "Checking instance status..."
+        HAPROXY_STATUS=$(gcloud compute instances describe haproxy-prod --zone=europe-west1-b --format="value(status)" 2>/dev/null || echo "NOT_FOUND")
+        WEB1_STATUS=$(gcloud compute instances describe web1-prod --zone=europe-west1-b --format="value(status)" 2>/dev/null || echo "NOT_FOUND")
+        WEB2_STATUS=$(gcloud compute instances describe web2-prod --zone=europe-west1-b --format="value(status)" 2>/dev/null || echo "NOT_FOUND")
+        
+        echo "HAProxy Status: $HAPROXY_STATUS"
+        echo "Web1 Status: $WEB1_STATUS"
+        echo "Web2 Status: $WEB2_STATUS"
+        
+        # Check if instances are running
+        if [[ "$HAPROXY_STATUS" == "RUNNING" && "$WEB1_STATUS" == "RUNNING" && "$WEB2_STATUS" == "RUNNING" ]]; then
+          echo "✅ All instances are running"
+          INSTANCE_STATUS="HEALTHY"
+        else
+          echo "❌ Some instances are not running"
+          INSTANCE_STATUS="UNHEALTHY"
+        fi
+        
+        # Test domains if instances are running
+        if [[ "$INSTANCE_STATUS" == "HEALTHY" ]]; then
+          echo "Testing domains..."
+          
+          # Test Load Balancer
+          if curl -f -s https://balancer.svdevops.tech > /dev/null; then
+            echo "✅ Load Balancer: HEALTHY"
+            BALANCER_STATUS="HEALTHY"
+          else
+            echo "❌ Load Balancer: UNHEALTHY"
+            BALANCER_STATUS="UNHEALTHY"
+          fi
+          
+          # Test Web1
+          if curl -f -s https://web1.svdevops.tech > /dev/null; then
+            echo "✅ Web1: HEALTHY"
+            WEB1_DOMAIN_STATUS="HEALTHY"
+          else
+            echo "❌ Web1: UNHEALTHY"
+            WEB1_DOMAIN_STATUS="UNHEALTHY"
+          fi
+          
+          # Test Web2
+          if curl -f -s https://web2.svdevops.tech > /dev/null; then
+            echo "✅ Web2: HEALTHY"
+            WEB2_DOMAIN_STATUS="HEALTHY"
+          else
+            echo "❌ Web2: UNHEALTHY"
+            WEB2_DOMAIN_STATUS="UNHEALTHY"
+          fi
+          
+          # Test Stats
+          if curl -f -s https://stats.svdevops.tech > /dev/null; then
+            echo "✅ Stats: HEALTHY"
+            STATS_STATUS="HEALTHY"
+          else
+            echo "❌ Stats: UNHEALTHY"
+            STATS_STATUS="UNHEALTHY"
+          fi
+          
+          # Overall health
+          if [[ "$BALANCER_STATUS" == "HEALTHY" && "$WEB1_DOMAIN_STATUS" == "HEALTHY" && "$WEB2_DOMAIN_STATUS" == "HEALTHY" && "$STATS_STATUS" == "HEALTHY" ]]; then
+            echo "✅ Overall Status: HEALTHY"
+            OVERALL_STATUS="HEALTHY"
+          else
+            echo "❌ Overall Status: UNHEALTHY"
+            OVERALL_STATUS="UNHEALTHY"
+          fi
+        else
+          echo "⚠️ Skipping domain tests - instances not running"
+          BALANCER_STATUS="SKIPPED"
+          WEB1_DOMAIN_STATUS="SKIPPED"
+          WEB2_DOMAIN_STATUS="SKIPPED"
+          STATS_STATUS="SKIPPED"
+          OVERALL_STATUS="UNHEALTHY"
+        fi
+        
+        # Set outputs
+        echo "instance_status=$INSTANCE_STATUS" >> $GITHUB_OUTPUT
+        echo "balancer_status=$BALANCER_STATUS" >> $GITHUB_OUTPUT
+        echo "web1_status=$WEB1_DOMAIN_STATUS" >> $GITHUB_OUTPUT
+        echo "web2_status=$WEB2_DOMAIN_STATUS" >> $GITHUB_OUTPUT
+        echo "stats_status=$STATS_STATUS" >> $GITHUB_OUTPUT
+        echo "overall_status=$OVERALL_STATUS" >> $GITHUB_OUTPUT
+
+    - name: 📊 Health Check Summary
+      run: |
+        echo "## 📊 Health Check Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🖥️ Instance Status:" >> $GITHUB_STEP_SUMMARY
+        echo "- **HAProxy:** ${{ steps.health_check.outputs.instance_status }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Web1:** ${{ steps.health_check.outputs.instance_status }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Web2:** ${{ steps.health_check.outputs.instance_status }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🌐 Domain Status:" >> $GITHUB_STEP_SUMMARY
+        echo "- **Load Balancer:** ${{ steps.health_check.outputs.balancer_status }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Web1 (Direct):** ${{ steps.health_check.outputs.web1_status }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Web2 (Direct):** ${{ steps.health_check.outputs.web2_status }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Stats:** ${{ steps.health_check.outputs.stats_status }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🎯 Overall Status: ${{ steps.health_check.outputs.overall_status }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ⏰ Check Time: $(date)" >> $GITHUB_STEP_SUMMARY
+
+    - name: 🚨 Alert on Failure
+      if: steps.health_check.outputs.overall_status == 'UNHEALTHY'
+      run: |
+        echo "🚨 ALERT: Infrastructure is unhealthy!"
+        echo "Please check the logs and investigate the issue."
+        echo ""
+        echo "### 🔍 Troubleshooting Steps:"
+        echo "1. Check instance status: gcloud compute instances list"
+        echo "2. Check logs: gcloud compute ssh haproxy-prod --zone=europe-west1-b --command='sudo journalctl -u haproxy'"
+        echo "3. Restart if needed: ./start-instances.sh"
+        echo ""
+        echo "### 🌐 Test URLs:"
+        echo "- https://balancer.svdevops.tech"
+        echo "- https://web1.svdevops.tech"
+        echo "- https://web2.svdevops.tech"
+        echo "- https://stats.svdevops.tech"
