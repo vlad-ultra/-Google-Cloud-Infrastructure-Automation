@@ -29,34 +29,50 @@ jobs:
 
     - name: 🔄 Update Content
       run: |
-        echo "🔄 Updating content on web servers..."
-        chmod +x ./update-content.sh
-        ./update-content.sh
-        echo "✅ Content updated successfully"
+        echo "🔄 Checking if infrastructure exists..."
+        
+        # Check if instances exist
+        if gcloud compute instances describe haproxy-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+          echo "✅ Infrastructure exists, updating content..."
+          chmod +x ./update-content.sh
+          ./update-content.sh
+          echo "✅ Content updated successfully"
+        else
+          echo "⚠️ Infrastructure not found, skipping content update"
+          echo "Run deploy workflow first to create infrastructure"
+          exit 0
+        fi
 
     - name: 🧪 Test Content Update
       run: |
         echo "🧪 Testing content update..."
         
-        # Wait for content to be updated
-        sleep 30
-        
-        # Test all domains
-        echo "Testing Load Balancer (Roundrobin):"
-        curl -f https://balancer.svdevops.tech || echo "⚠️ Load balancer test failed"
-        
-        echo "Testing Web1 (Direct):"
-        curl -f https://web1.svdevops.tech || echo "⚠️ Web1 test failed"
-        
-        echo "Testing Web2 (Direct):"
-        curl -f https://web2.svdevops.tech || echo "⚠️ Web2 test failed"
-        
-        # Test roundrobin with new content
-        echo "Testing Roundrobin with updated content:"
-        for i in {1..3}; do
-          echo "Request $i:"
-          curl -s https://balancer.svdevops.tech | grep -E "(Web Server|title)" | head -1
-        done
+        # Check if infrastructure exists before testing
+        if gcloud compute instances describe haproxy-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+          echo "✅ Infrastructure exists, testing domains..."
+          
+          # Wait for content to be updated
+          sleep 30
+          
+          # Test all domains
+          echo "Testing Load Balancer (Roundrobin):"
+          curl -f https://balancer.svdevops.tech || echo "⚠️ Load balancer test failed"
+          
+          echo "Testing Web1 (Direct):"
+          curl -f https://web1.svdevops.tech || echo "⚠️ Web1 test failed"
+          
+          echo "Testing Web2 (Direct):"
+          curl -f https://web2.svdevops.tech || echo "⚠️ Web2 test failed"
+          
+          # Test roundrobin with new content
+          echo "Testing Roundrobin with updated content:"
+          for i in {1..3}; do
+            echo "Request $i:"
+            curl -s https://balancer.svdevops.tech | grep -E "(Web Server|title)" | head -1
+          done
+        else
+          echo "⚠️ Infrastructure not found, skipping tests"
+        fi
 
     - name: 📊 Content Update Summary
       run: |
