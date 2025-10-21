@@ -135,8 +135,9 @@ echo "🔧 Updating configurations..."
 # Update web1 HTML
 echo "Updating Web1 HTML..."
 if [ -f "web-apps/web1.html" ]; then
-    gcloud compute scp web-apps/web1.html web1-prod:/tmp/web1.html --zone=europe-west1-b     gcloud compute ssh web1-prod --zone=europe-west1-b  --command="
-        sudo cp /tmp/web1.html /var/www/html/index.html
+    gcloud compute scp web-apps/web1.html web1-prod:/home/vladultra777/web1.html --zone=europe-west1-b
+    gcloud compute ssh web1-prod --zone=europe-west1-b --command="
+        sudo cp /home/vladultra777/web1.html /var/www/html/index.html
         sudo chown root:root /var/www/html/index.html
         sudo chmod 644 /var/www/html/index.html
         sudo systemctl restart nginx
@@ -149,8 +150,9 @@ fi
 # Update web2 HTML
 echo "Updating Web2 HTML..."
 if [ -f "web-apps/web2.html" ]; then
-    gcloud compute scp web-apps/web2.html web2-prod:/tmp/web2.html --zone=europe-west1-b     gcloud compute ssh web2-prod --zone=europe-west1-b  --command="
-        sudo cp /tmp/web2.html /var/www/html/index.html
+    gcloud compute scp web-apps/web2.html web2-prod:/home/vladultra777/web2.html --zone=europe-west1-b
+    gcloud compute ssh web2-prod --zone=europe-west1-b --command="
+        sudo cp /home/vladultra777/web2.html /var/www/html/index.html
         sudo chown root:root /var/www/html/index.html
         sudo chmod 644 /var/www/html/index.html
         sudo systemctl restart nginx
@@ -173,8 +175,9 @@ gcloud compute ssh haproxy-prod --zone=europe-west1-b  --command="
 # Update HAProxy dashboard
 echo "Updating HAProxy dashboard..."
 if [ -f "web-apps/haproxy.html" ]; then
-    gcloud compute scp web-apps/haproxy.html haproxy-prod:/tmp/haproxy.html --zone=europe-west1-b     gcloud compute ssh haproxy-prod --zone=europe-west1-b  --command="
-        sudo cp /tmp/haproxy.html /var/www/html/index.html
+    gcloud compute scp web-apps/haproxy.html haproxy-prod:/home/vladultra777/haproxy.html --zone=europe-west1-b
+    gcloud compute ssh haproxy-prod --zone=europe-west1-b --command="
+        sudo cp /home/vladultra777/haproxy.html /var/www/html/index.html
         sudo chown root:root /var/www/html/index.html
         sudo chmod 644 /var/www/html/index.html
         sudo systemctl restart nginx
