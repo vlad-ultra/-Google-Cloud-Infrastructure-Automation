@@ -24,6 +24,22 @@ echo "🔐 Checking Google Cloud authentication..."
 echo "Current account: $(gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null || echo 'None')"
 echo "Project: $(gcloud config get-value project 2>/dev/null || echo 'Not set')"
 
+# Check if we're in GitHub Actions
+if [ -n "$GITHUB_ACTIONS" ]; then
+    echo "🤖 Running in GitHub Actions"
+    echo "GCP_PROJECT_ID: ${GCP_PROJECT_ID:-'Not set'}"
+    echo "GCP_SA_KEY: ${GCP_SA_KEY:+Set}${GCP_SA_KEY:-'Not set'}"
+    
+    # Try to authenticate with service account
+    if [ -n "$GCP_SA_KEY" ]; then
+        echo "🔑 Authenticating with service account..."
+        echo "$GCP_SA_KEY" > /tmp/gcp-key.json
+        gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+        gcloud config set project "$GCP_PROJECT_ID"
+        rm -f /tmp/gcp-key.json
+    fi
+fi
+
 if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q .; then
     echo "❌ Error: Not authenticated to Google Cloud"
     echo "In GitHub Actions: Check that GCP_SA_KEY secret is set"

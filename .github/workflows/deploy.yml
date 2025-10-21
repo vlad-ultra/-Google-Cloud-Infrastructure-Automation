@@ -27,6 +27,7 @@ jobs:
       with:
         service_account_key: ${{ secrets.GCP_SA_KEY }}
         project_id: ${{ secrets.GCP_PROJECT_ID }}
+        export_default_credentials: true
 
     - name: 🏗️ Deploy Infrastructure
       run: |
@@ -103,6 +104,7 @@ jobs:
       with:
         service_account_key: ${{ secrets.GCP_SA_KEY }}
         project_id: ${{ secrets.GCP_PROJECT_ID }}
+        export_default_credentials: true
 
     - name: 🛑 Test Stop Instances
       run: |
@@ -171,6 +173,7 @@ jobs:
       with:
         service_account_key: ${{ secrets.GCP_SA_KEY }}
         project_id: ${{ secrets.GCP_PROJECT_ID }}
+        export_default_credentials: true
 
     - name: 🗑️ Destroy Infrastructure
       run: |
@@ -202,6 +205,7 @@ jobs:
       with:
         service_account_key: ${{ secrets.GCP_SA_KEY }}
         project_id: ${{ secrets.GCP_PROJECT_ID }}
+        export_default_credentials: true
 
     - name: 🗑️ Auto Destroy (Nightly)
       run: |
