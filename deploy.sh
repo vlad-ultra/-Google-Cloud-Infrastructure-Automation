@@ -40,7 +40,36 @@ echo "✅ Project ID: $PROJECT_ID"
 # Navigate to infrastructure directory
 cd infrastructure
 
-# Destroy old servers (preserve static IPs)
+# Check if infrastructure already exists
+echo ""
+echo "🔍 Checking if infrastructure already exists..."
+if gcloud compute instances describe haproxy-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+    echo "✅ Infrastructure already exists, skipping deployment"
+    echo "🔄 Updating content and SSL configuration instead..."
+    
+    # Go back to project root for content updates
+    cd ..
+    
+    # Update content
+    echo "📝 Updating content on existing servers..."
+    chmod +x ./update-content.sh
+    ./update-content.sh
+    
+    # Configure SSL if not already configured
+    echo "🔐 Checking SSL configuration..."
+    if ! gcloud compute ssh haproxy-prod --zone=europe-west1-b --command="sudo test -f /etc/haproxy/certs/svdevops.tech.pem" 2>/dev/null; then
+        echo "🔐 Configuring SSL certificates..."
+        # Add SSL configuration logic here
+        echo "⚠️ SSL configuration needed - run start-instances.sh to configure SSL"
+    else
+        echo "✅ SSL already configured"
+    fi
+    
+    echo "✅ Content updated on existing infrastructure"
+    exit 0
+fi
+
+# Destroy old servers (preserve static IPs) - only if they exist
 echo ""
 echo "🗑️  Removing old servers (preserving static IPs)..."
 terraform destroy -target=google_compute_instance.haproxy -target=google_compute_instance.web1 -target=google_compute_instance.web2 -auto-approve || true
