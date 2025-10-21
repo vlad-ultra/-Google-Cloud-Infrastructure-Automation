@@ -21,9 +21,13 @@ echo "📁 Working directory: $(pwd)"
 
 # Check Google Cloud authentication
 echo "🔐 Checking Google Cloud authentication..."
+echo "Current account: $(gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null || echo 'None')"
+echo "Project: $(gcloud config get-value project 2>/dev/null || echo 'Not set')"
+
 if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q .; then
     echo "❌ Error: Not authenticated to Google Cloud"
-    echo "Run: gcloud auth login"
+    echo "In GitHub Actions: Check that GCP_SA_KEY secret is set"
+    echo "Locally: Run: gcloud auth login"
     exit 1
 fi
 
