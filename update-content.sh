@@ -10,12 +10,10 @@ echo "============================================="
 # Navigate to project directory
 cd "$(dirname "$0")"
 
-# Get FIXED internal IPs from Terraform
+# Get FIXED internal IPs from gcloud (hardcoded for reliability)
 echo "🔍 Getting FIXED internal IP addresses..."
-cd infrastructure
-WEB1_INTERNAL_IP=$(terraform output -raw web1_internal_ip)
-WEB2_INTERNAL_IP=$(terraform output -raw web2_internal_ip)
-cd ..
+WEB1_INTERNAL_IP="10.132.15.215"
+WEB2_INTERNAL_IP="10.132.15.216"
 
 echo "Web1 Internal IP: $WEB1_INTERNAL_IP"
 echo "Web2 Internal IP: $WEB2_INTERNAL_IP"

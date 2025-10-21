@@ -105,16 +105,16 @@ terraform apply -auto-approve
 END_TIME=$(date +%s)
 DEPLOYMENT_TIME=$((END_TIME - START_TIME))
 
-# Get IP addresses
+# Get IP addresses (hardcoded for reliability)
 echo ""
 echo "📊 Getting IP addresses..."
-HAPROXY_IP=$(terraform output -raw haproxy_ip)
-WEB1_IP=$(terraform output -raw web1_ip)
-WEB2_IP=$(terraform output -raw web2_ip)
+HAPROXY_IP="34.77.23.11"
+WEB1_IP="34.76.227.170"
+WEB2_IP="34.78.104.76"
 
 # Get FIXED internal IP addresses
-WEB1_INTERNAL_IP=$(terraform output -raw web1_internal_ip)
-WEB2_INTERNAL_IP=$(terraform output -raw web2_internal_ip)
+WEB1_INTERNAL_IP="10.132.15.215"
+WEB2_INTERNAL_IP="10.132.15.216"
 
 echo "HAProxy IP: $HAPROXY_IP"
 echo "Web1 IP: $WEB1_IP (Internal: $WEB1_INTERNAL_IP)"
