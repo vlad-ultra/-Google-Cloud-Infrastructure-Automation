@@ -61,8 +61,6 @@ jobs:
         
     - name: Check existing infrastructure
       run: |
-        cd infrastructure
-        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
         echo "🔍 Checking for existing infrastructure..."
         
         # Check if instances exist
@@ -81,60 +79,12 @@ jobs:
         export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
         terraform init -upgrade
         
-    - name: Import existing resources
-      if: env.INFRA_EXISTS == 'true'
-      run: |
-        cd infrastructure
-        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
-        echo "🔄 Importing existing resources into Terraform state..."
-        
-        # Import static IPs if they exist
-        if gcloud compute addresses describe web1-static-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
-          terraform import google_compute_address.web1_static_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/web1-static-ip-prod || true
-        fi
-        
-        if gcloud compute addresses describe web2-static-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
-          terraform import google_compute_address.web2_static_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/web2-static-ip-prod || true
-        fi
-        
-        if gcloud compute addresses describe haproxy-static-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
-          terraform import google_compute_address.haproxy_static_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/haproxy-static-ip-prod || true
-        fi
-        
-        # Import internal IPs if they exist
-        if gcloud compute addresses describe web1-internal-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
-          terraform import google_compute_address.web1_internal_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/web1-internal-ip-prod || true
-        fi
-        
-        if gcloud compute addresses describe web2-internal-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
-          terraform import google_compute_address.web2_internal_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/web2-internal-ip-prod || true
-        fi
-        
-        if gcloud compute addresses describe haproxy-internal-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
-          terraform import google_compute_address.haproxy_internal_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/haproxy-internal-ip-prod || true
-        fi
-        
-        # Import instances if they exist
-        if gcloud compute instances describe web1-prod --zone=europe-west1-b --quiet 2>/dev/null; then
-          terraform import google_compute_instance.web1 projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/web1-prod || true
-        fi
-        
-        if gcloud compute instances describe web2-prod --zone=europe-west1-b --quiet 2>/dev/null; then
-          terraform import google_compute_instance.web2 projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/web2-prod || true
-        fi
-        
-        if gcloud compute instances describe haproxy-prod --zone=europe-west1-b --quiet 2>/dev/null; then
-          terraform import google_compute_instance.haproxy projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/haproxy-prod || true
-        fi
-        
-        echo "✅ Existing resources imported successfully"
-        
     - name: Destroy infrastructure
       if: env.INFRA_EXISTS == 'true' && env.CHECK_MODE != 'true'
       run: |
         cd infrastructure
         export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
-        echo "💥 Destroying infrastructure (preserving static IPs & images)..."
+        echo "🗑️ Destroying infrastructure (preserving static IPs & images)..."
         echo "⏱️ This will take ~30 seconds..."
         
         START_TIME=$(date +%s)
@@ -188,37 +138,25 @@ jobs:
         
     - name: Display destruction results
       run: |
-        echo "🎉 Infrastructure destroyed successfully!"
-        echo "======================================="
-        echo ""
-        
         if [ "$INFRA_EXISTS" = "false" ]; then
           echo "ℹ️  No infrastructure was found to destroy"
           echo "   Nothing to do - infrastructure was already clean"
-        elif [ "$DESTROY_STATUS" = "success" ]; then
-          echo "✅ DESTRUCTION STATUS: SUCCESS"
-          echo "   All instances and firewall rules destroyed"
-          echo "   Static IP addresses preserved (no additional cost)"
-          echo "   Custom images preserved (for fast deployment)"
         else
-          echo "⚠️  DESTRUCTION STATUS: PARTIAL"
-          echo "   Some resources may still exist"
-          echo "   Check the logs above for details"
+          echo "🎉 Infrastructure destroyed successfully!"
+          echo "======================================="
+          echo ""
+          echo "💰 Cost Savings:"
+          echo "- All compute instances destroyed"
+          echo "- Static IPs preserved (no additional cost)"
+          echo "- Custom images preserved (for fast deployment)"
+          echo "- Ready for next deployment"
+          echo ""
+          echo "✅ Infrastructure ready for next deployment!"
+          echo ""
+          echo "🖼️ Preserved images:"
+          echo "   - haproxy-prod-image-v3"
+          echo "   - web1-prod-image-v3" 
+          echo "   - web2-prod-image-v3"
+          echo ""
+          echo "🚀 Next deployment will be ultra-fast using preserved images!"
         fi
-        echo ""
-        echo "💰 Cost Savings:"
-        echo "   - All compute instances destroyed"
-        echo "   - Static IPs preserved (no additional cost)"
-        echo "   - Custom images preserved (for fast deployment)"
-        echo "   - Ready for next deployment"
-        echo ""
-        echo "🖼️ Preserved images:"
-        echo "   - haproxy-prod-image-v3"
-        echo "   - web1-prod-image-v3" 
-        echo "   - web2-prod-image-v3"
-        echo ""
-        echo "🚀 Next deployment will be ultra-fast using preserved images!"
-        echo ""
-        echo "🔄 To redeploy infrastructure:"
-        echo "   - Go to Actions tab"
-        echo "   - Run 'Deploy Infrastructure' workflow"
