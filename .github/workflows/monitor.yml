@@ -1,9 +1,9 @@
 name: 📊 Monitor Infrastructure
 
 on:
-  schedule:
-    - cron: '*/15 * * * *' # Every 15 minutes
-  workflow_dispatch: # Allow manual trigger
+  # schedule:
+  #   - cron: '*/15 * * * *' # Every 15 minutes
+  workflow_dispatch: # Allow manual trigger only
 
 env:
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}

@@ -1,11 +1,11 @@
 name: 🔄 Update Content
 
 on:
-  push:
-    paths:
-      - 'web-apps/**'
-    branches: [ main, master ]
-  workflow_dispatch: # Allow manual trigger
+  # push:
+  #   paths:
+  #     - 'web-apps/**'
+  #   branches: [ main, master ]
+  workflow_dispatch: # Allow manual trigger only
 
 env:
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
