@@ -89,7 +89,7 @@ if gcloud compute instances describe haproxy-prod --zone=europe-west1-b --quiet 
     exit 0
 fi
 
-# Destroy old servers (preserve static IPs) - only if they exist
+# Remove old servers (preserving static IPs)
 echo ""
 echo "🗑️  Removing old servers (preserving static IPs)..."
 terraform destroy -target=google_compute_instance.haproxy -target=google_compute_instance.web1 -target=google_compute_instance.web2 -auto-approve || true
