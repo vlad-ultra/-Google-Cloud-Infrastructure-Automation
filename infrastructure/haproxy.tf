@@ -21,7 +21,7 @@ resource "google_compute_instance" "haproxy" {
   }
 
   metadata = {
-    ssh-keys = "${var.ssh_user}:${file(var.ssh_public_key_path)}"
+    ssh-keys = "${var.ssh_user}:${var.ssh_public_key}"
   }
 
   tags = ["load-balancer", "ssh-server"]

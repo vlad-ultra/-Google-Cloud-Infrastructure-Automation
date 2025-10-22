@@ -185,12 +185,9 @@ echo "Updating HAProxy dashboard..."
 if [ -f "web-apps/haproxy.html" ]; then
     gcloud compute scp web-apps/haproxy.html haproxy-prod:~/haproxy.html --zone=europe-west1-b
     gcloud compute ssh haproxy-prod --zone=europe-west1-b --command="
-        sudo rm -f /var/www/html/index.html
-        sudo cp ~/haproxy.html /var/www/html/index.html
-        sudo chown root:root /var/www/html/index.html
+        # HAProxy serves its own dashboard on port 8080, no nginx needed
+        echo 'HAProxy dashboard is available on port 8080'
         rm -f ~/haproxy.html
-        sudo chmod 644 /var/www/html/index.html
-        sudo systemctl restart nginx
         echo 'HAProxy dashboard updated successfully'
     "
 else
