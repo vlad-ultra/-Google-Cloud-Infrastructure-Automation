@@ -134,8 +134,27 @@ jobs:
       run: |
         cd infrastructure
         export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
-        echo "💥 Destroying infrastructure..."
-        terraform destroy -auto-approve
+        echo "💥 Destroying infrastructure (preserving static IPs & images)..."
+        echo "⏱️ This will take ~30 seconds..."
+        
+        START_TIME=$(date +%s)
+        terraform init -upgrade
+        terraform destroy -auto-approve \
+          -target=google_compute_instance.haproxy \
+          -target=google_compute_instance.web1 \
+          -target=google_compute_instance.web2 \
+          -target=google_compute_firewall.allow_http \
+          -target=google_compute_firewall.allow_https \
+          -target=google_compute_firewall.allow_ssh \
+          -target=google_compute_firewall.allow_haproxy_lb \
+          -target=google_compute_firewall.allow_haproxy_web1 \
+          -target=google_compute_firewall.allow_haproxy_web2 \
+          -target=google_compute_firewall.allow_haproxy_stats \
+          -target=google_compute_firewall.allow_haproxy_stats_page || true
+        END_TIME=$(date +%s)
+        DESTROY_TIME=$((END_TIME - START_TIME))
+        
+        echo "⏱️ Total destroy time: ${DESTROY_TIME} seconds"
         
     - name: Check mode - Skip destruction
       if: env.CHECK_MODE == 'true'
@@ -170,8 +189,8 @@ jobs:
         
     - name: Display destruction results
       run: |
-        echo "💥 Infrastructure Destruction Completed!"
-        echo "======================================"
+        echo "🎉 Infrastructure destroyed successfully!"
+        echo "======================================="
         echo ""
         
         if [ "$INFRA_EXISTS" = "false" ]; then
@@ -179,8 +198,9 @@ jobs:
           echo "   Nothing to do - infrastructure was already clean"
         elif [ "$DESTROY_STATUS" = "success" ]; then
           echo "✅ DESTRUCTION STATUS: SUCCESS"
-          echo "   All instances and resources have been destroyed"
-          echo "   Static IP addresses have been preserved (prevent_destroy = true)"
+          echo "   All instances and firewall rules destroyed"
+          echo "   Static IP addresses preserved (no additional cost)"
+          echo "   Custom images preserved (for fast deployment)"
         else
           echo "⚠️  DESTRUCTION STATUS: PARTIAL"
           echo "   Some resources may still exist"
@@ -188,11 +208,18 @@ jobs:
         fi
         echo ""
         echo "💰 Cost Savings:"
-        echo "   - VM instances: STOPPED/DESTROYED"
-        echo "   - Compute costs: ELIMINATED"
-        echo "   - Static IPs: PRESERVED (for future use)"
+        echo "   - All compute instances destroyed"
+        echo "   - Static IPs preserved (no additional cost)"
+        echo "   - Custom images preserved (for fast deployment)"
+        echo "   - Ready for next deployment"
+        echo ""
+        echo "🖼️ Preserved images:"
+        echo "   - haproxy-prod-image-v3"
+        echo "   - web1-prod-image-v3" 
+        echo "   - web2-prod-image-v3"
+        echo ""
+        echo "🚀 Next deployment will be ultra-fast using preserved images!"
         echo ""
         echo "🔄 To redeploy infrastructure:"
         echo "   - Go to Actions tab"
         echo "   - Run 'Deploy Infrastructure' workflow"
-        echo "   - Or push to main/develop branch"
