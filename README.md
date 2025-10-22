@@ -1,193 +1,314 @@
-# 🚀 DevOps Master System v.3.0
+# 🚀 Google Cloud Infrastructure Automation
 
-A production-ready, highly available web application infrastructure on Google Cloud Platform (GCP) with advanced DevOps practices, automated CI/CD, and cost optimization.
+## 📋 Project Overview
 
-## ⚡ Features
+This project provides a complete **DevOps automation solution** for deploying and managing a highly available web infrastructure on Google Cloud Platform (GCP). The system features ultra-fast deployment using pre-configured images, centralized SSL certificate management, and automated load balancing.
 
-- **🚀 Fast Deployment**: ~30 seconds using pre-built images
-- **🔒 SSL/TLS Security**: Individual certificates for each web server
-- **⚖️ Load Balancing**: HAProxy with HTTPS roundrobin
-- **🌐 High Availability**: Multiple web servers with health checks
-- **💰 Cost Optimization**: Stop/start scripts for cost management
-- **🔄 CI/CD Automation**: GitHub Actions for deployment and monitoring
-- **📊 Monitoring**: Automated health checks and alerting
-- **🏗️ Infrastructure as Code**: Complete Terraform automation
-- **🔐 Security**: Let's Encrypt SSL with automatic renewal
-- **📦 Backup**: SSL certificates stored in Google Cloud Storage
+## ✨ Key Features
+
+- **⚡ Ultra-Fast Deployment** - Deploy infrastructure in ~30-60 seconds using pre-configured images
+- **🔐 Centralized SSL Management** - Manage Let's Encrypt certificates through Google Cloud Storage
+- **⚖️ Load Balancing** - HAProxy with health checks and SSL termination
+- **🖼️ Custom Images** - Pre-configured images with all settings preserved
+- **🔧 Configuration Management** - Automated configuration backup and restore
+- **📊 Monitoring** - Built-in load balancing tests and health checks
 
 ## 🏗️ Architecture
 
 ```
-Internet → HAProxy (Load Balancer) → Web Server 1 (HTTPS)
-                                → Web Server 2 (HTTPS)
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   HAProxy LB    │    │   Web Server 1  │    │   Web Server 2  │
+│  (Load Balancer)│    │   (Nginx)       │    │   (Nginx)       │
+│                 │    │                 │    │                 │
+│ • SSL Termination│◄──►│ • HTTP/HTTPS    │    │ • HTTP/HTTPS    │
+│ • Health Checks │    │ • Let's Encrypt │    │ • Let's Encrypt │
+│ • Stats Page    │    │ • Custom Content│    │ • Custom Content│
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌─────────────────┐
+                    │  Google Cloud   │
+                    │   Storage       │
+                    │                 │
+                    │ • SSL Certs     │
+                    │ • Images        │
+                    │ • Backups       │
+                    └─────────────────┘
 ```
-
-**Components:**
-- **HAProxy**: Load balancer with HTTPS roundrobin and statistics
-- **Web Server 1 & 2**: Nginx servers with individual SSL certificates
-- **Static IPs**: Fixed internal and external IPs for stability
-- **SSL/TLS**: Let's Encrypt certificates with automatic renewal
-- **Monitoring**: Automated health checks and alerting
-- **CI/CD**: GitHub Actions for deployment and content updates
 
 ## 🚀 Quick Start
 
-1. **Deploy infrastructure:**
-   ```bash
-   ./deploy.sh
-   ```
+### Prerequisites
 
-2. **Update content:**
-   ```bash
-   ./update-content.sh
-   ```
+1. **Google Cloud SDK** installed and configured
+2. **Terraform** installed
+3. **Git** for version control
+4. **SSH key** for server access
 
-3. **Stop instances (save money):**
-   ```bash
-   ./stop-instances.sh
-   ```
+### 1. Clone the Repository
 
-4. **Start instances:**
-   ```bash
-   ./start-instances.sh
-   ```
+```bash
+git clone https://github.com/vlad-ultra/-Google-Cloud-Infrastructure-Automation.git
+cd Google-Cloud-Infrastructure-Automation
+```
 
-5. **Destroy infrastructure:**
-   ```bash
-   ./destroy-infrastructure.sh
-   ```
+### 2. Configure Google Cloud
 
-## 🌐 Access
+```bash
+# Authenticate with Google Cloud
+gcloud auth login
 
-After deployment:
-- **Load Balancer**: https://balancer.svdevops.tech
-- **HAProxy Stats**: https://stats.svdevops.tech
-- **Web Server 1**: https://web1.svdevops.tech
-- **Web Server 2**: https://web2.svdevops.tech
+# Set your project ID
+gcloud config set project YOUR_PROJECT_ID
+
+# Enable required APIs
+gcloud services enable compute.googleapis.com
+gcloud services enable dns.googleapis.com
+```
+
+### 3. Deploy Infrastructure
+
+```bash
+# Deploy with pre-configured images (recommended)
+./deploy.sh
+
+# Or deploy with custom configurations
+./apply-configs.sh
+```
+
+### 4. Test Load Balancing
+
+```bash
+# Test load balancing functionality
+./test-load-balancing.sh
+```
 
 ## 📁 Project Structure
 
 ```
-├── deploy.sh                    # Main deployment script
-├── update-content.sh            # Update HTML content
-├── stop-instances.sh            # Stop instances (save money)
-├── start-instances.sh           # Start instances with HTTPS
-├── destroy-infrastructure.sh    # Destroy all infrastructure
-├── configure-haproxy.sh         # HAProxy configuration script
-├── save-ssl-to-gcs.sh          # Save SSL certificates to GCS
-├── restore-ssl-from-gcs.sh     # Restore SSL certificates from GCS
-├── infrastructure/              # Terraform configuration
-│   ├── main.tf
-│   ├── haproxy.tf
-│   ├── web-servers.tf
-│   ├── static-ips.tf
-│   ├── static-internal-ips.tf
-│   └── firewall.tf
-└── web-apps/                    # HTML content
-    ├── web1.html
-    ├── web2.html
-    └── haproxy.html
+📁 GoogleCloud/first-project/
+├── 🚀 deploy.sh                    # Main deployment script
+├── 🗑️ destroy-infrastructure.sh    # Infrastructure destruction
+├── 🔧 apply-configs.sh             # Apply configurations
+├── 🔄 test-load-balancing.sh       # Load balancing tests
+├── 🖼️ create-new-images.sh         # Create custom images
+├── 🔧 restore-configs.sh           # Restore configurations
+├── 🔐 ssl.sh                       # SSL management
+├── 📁 infrastructure/              # Terraform configurations
+│   ├── main.tf                     # Main Terraform config
+│   ├── variables.tf                # Variables
+│   ├── outputs.tf                  # Outputs
+│   ├── haproxy.tf                  # HAProxy instance
+│   ├── web-servers.tf              # Web servers
+│   ├── static-ips.tf               # Static IP addresses
+│   ├── static-internal-ips.tf      # Internal IP addresses
+│   └── firewall.tf                 # Firewall rules
+├── 📁 scripts/                     # Utility scripts
+│   ├── configure-haproxy.sh        # HAProxy configuration
+│   └── update-content.sh           # Content updates
+├── 📁 ssl-management/              # SSL certificate management
+│   ├── ssl-manager.sh              # Interactive SSL manager
+│   ├── export-certs-to-gcs.sh      # Export certificates to GCS
+│   ├── import-certs-from-gcs.sh    # Import certificates from GCS
+│   └── create-images-with-gcs-certs.sh # Create images with GCS certs
+├── 📁 backups/                     # Configuration backups
+│   └── current-state/              # Current state backups
+│       ├── haproxy.cfg             # HAProxy configuration
+│       ├── web1-nginx.conf         # Web1 Nginx configuration
+│       ├── web2-nginx.conf         # Web2 Nginx configuration
+│       ├── web1-content.html       # Web1 content
+│       └── web2-content.html       # Web2 content
+├── 📁 web-apps/                    # Web server content
+│   ├── web1.html                   # Web1 HTML content
+│   ├── web2.html                   # Web2 HTML content
+│   └── haproxy.html                # HAProxy content
+└── 📄 README.md                    # This file
 ```
 
-## 🔧 Configuration
+## 🔧 Scripts Overview
 
-### Fixed Internal IPs
+### Main Scripts
 
-The project uses **fixed internal IPs** to prevent configuration issues:
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `deploy.sh` | Main deployment using pre-configured images | `./deploy.sh` |
+| `destroy-infrastructure.sh` | Destroy infrastructure (preserves static IPs) | `./destroy-infrastructure.sh` |
+| `apply-configs.sh` | Apply configurations to existing servers | `./apply-configs.sh` |
+| `test-load-balancing.sh` | Test load balancing functionality | `./test-load-balancing.sh` |
 
-- **Web Server 1**: `10.132.15.215`
-- **Web Server 2**: `10.132.15.216`
-- **HAProxy**: `10.132.15.214`
+### Image Management
 
-### SSL Certificates
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `create-new-images.sh` | Create new images with current configurations | `./create-new-images.sh` |
+| `ssl.sh` | Interactive SSL management | `./ssl.sh` |
 
-- **Automatic generation** with Let's Encrypt
-- **Backup to GCS** for fast restoration
-- **Auto-renewal** via cron job
-- **HTTPS redirect** for all domains
+### Configuration Management
 
-### Pre-built Images
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `restore-configs.sh` | Restore configurations from backups | `./restore-configs.sh` |
 
-- **haproxy-loadbalancer-image**: HAProxy with basic configuration
-- **web-server-1-image**: Nginx with custom content
-- **web-server-2-image**: Nginx with custom content
+## 🔐 SSL Certificate Management
 
-## 💰 Cost Optimization
-
-Use `stop-instances.sh` to stop all instances and save money:
-- **Instances**: STOPPED (no compute charges)
-- **Static IPs**: PRESERVED (minimal cost ~$0.01/hour)
-- **Disks**: PRESERVED (minimal cost ~$0.04/GB/month)
-
-## 🔑 SSH Access
+### Using SSL Manager (Recommended)
 
 ```bash
-# HAProxy
-gcloud compute ssh haproxy-prod --zone=europe-west1-b --tunnel-through-iap
-
-# Web Server 1
-gcloud compute ssh web1-prod --zone=europe-west1-b --tunnel-through-iap
-
-# Web Server 2
-gcloud compute ssh web2-prod --zone=europe-west1-b --tunnel-through-iap
+# Interactive SSL management
+./ssl.sh
 ```
 
-## 📊 Monitoring
+### Manual SSL Operations
 
-- **HAProxy Stats**: https://stats.svdevops.tech
-- **Health Checks**: Automatic monitoring of web servers
-- **Load Balancing**: Round-robin distribution
-- **SSL Certificate Status**: Automatic monitoring and renewal
+```bash
+# Export certificates to GCS
+cd ssl-management
+./export-certs-to-gcs.sh
 
-## 🛠️ Troubleshooting
+# Import certificates from GCS
+./import-certs-from-gcs.sh
+
+# Create images with GCS certificates
+./create-images-with-gcs-certs.sh
+```
+
+## 🖼️ Image Management
+
+### Creating New Images
+
+1. **Apply current configurations:**
+   ```bash
+   ./apply-configs.sh
+   ```
+
+2. **Create new images:**
+   ```bash
+   ./create-new-images.sh
+   ```
+
+3. **Update Terraform to use new images:**
+   - Edit `infrastructure/haproxy.tf`
+   - Edit `infrastructure/web-servers.tf`
+   - Update image names to new versions
+
+### Image Versions
+
+- **v3** - Current production images with correct configurations
+- **v4** - Images with GCS certificates (when created)
+
+## ⚙️ Configuration Management
+
+### Backup Current State
+
+```bash
+# Configurations are automatically backed up in backups/current-state/
+```
+
+### Restore Configurations
+
+```bash
+# Restore from backups
+./restore-configs.sh
+```
+
+### Apply Custom Configurations
+
+```bash
+# Apply configurations to existing servers
+./apply-configs.sh
+```
+
+## 🌐 URLs and Access
+
+After deployment, the following URLs will be available:
+
+- **Load Balancer:** https://balancer.svdevops.tech
+- **Web Server 1:** https://web1.svdevops.tech
+- **Web Server 2:** https://web2.svdevops.tech
+- **HAProxy Stats:** http://[HAProxy_IP]:8080/stats
+
+## 🔧 Troubleshooting
 
 ### Common Issues
 
-1. **IP Address Changes**: Use fixed internal IPs (already configured)
-2. **Service Not Starting**: Check systemd status
-3. **Load Balancer Issues**: Check HAProxy configuration
-4. **SSL Issues**: Check certificate status and renewal
+1. **Load Balancer not responding:**
+   ```bash
+   # Check HAProxy status
+   gcloud compute ssh haproxy-prod --zone=europe-west1-b --command="sudo systemctl status haproxy"
+   ```
+
+2. **SSL certificates not working:**
+   ```bash
+   # Check certificate status
+   ./ssl.sh
+   # Select option 6: Test certificate validity
+   ```
+
+3. **Web servers not responding:**
+   ```bash
+   # Check Nginx status
+   gcloud compute ssh web1-prod --zone=europe-west1-b --command="sudo systemctl status nginx"
+   ```
 
 ### Logs
 
 ```bash
 # HAProxy logs
-sudo journalctl -u haproxy.service -f
+gcloud compute ssh haproxy-prod --zone=europe-west1-b --command="sudo journalctl -u haproxy -f"
 
 # Nginx logs
-sudo journalctl -u nginx.service -f
-
-# SSL renewal logs
-sudo journalctl -u certbot.timer -f
+gcloud compute ssh web1-prod --zone=europe-west1-b --command="sudo journalctl -u nginx -f"
 ```
 
-## 🔄 GitHub Actions CI/CD
+## 📊 Performance
 
-The project includes automated CI/CD workflows:
+- **Deployment Time:** ~30-60 seconds
+- **Server Type:** e2-standard-2 (2 vCPU, 4GB RAM)
+- **Load Balancing:** Round-robin with health checks
+- **SSL:** Let's Encrypt with automatic renewal
 
-### 🚀 Deploy Workflow
-- **Trigger**: Push to `main` branch
-- **Actions**: Deploy infrastructure, configure SSL, test domains
-- **Features**: Full deployment with testing and stop/start verification
+## 🔒 Security Features
 
-### 🔄 Update Content Workflow
-- **Trigger**: Changes to `web-apps/**` files
-- **Actions**: Update HTML content on all web servers
-- **Features**: Automatic content deployment and verification
+- **SSL/TLS Encryption** - All traffic encrypted
+- **Firewall Rules** - Restricted access to necessary ports
+- **Static IPs** - Fixed IP addresses for stability
+- **Health Checks** - Automatic failover for failed servers
 
-### 📊 Monitor Workflow
-- **Trigger**: Every 15 minutes + manual
-- **Actions**: Health checks, domain testing, alerting
-- **Features**: Continuous monitoring and failure detection
+## 🚀 GitHub Actions CI/CD
 
-## 📝 Notes
+The project includes GitHub Actions workflows for:
 
-- **Fixed Internal IPs**: Prevents configuration issues between deployments
-- **Pre-built Images**: Faster deployment (~30 seconds)
-- **HTTPS Support**: All domains work with SSL certificates
-- **Cost Optimization**: Stop instances when not in use
-- **SSL Backup**: Certificates saved to Google Cloud Storage
-- **Auto-renewal**: SSL certificates renew automatically
-- **CI/CD Automation**: GitHub Actions for deployment and monitoring
-- **Individual SSL**: Each web server has its own SSL certificate
-- **HTTPS Roundrobin**: Load balancing with SSL termination# Trigger deploy
+- **Automated Deployment** - Deploy on push to main
+- **Content Updates** - Update web content
+- **Monitoring** - Health checks and monitoring
+
+## 📝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 👨‍💻 Author
+
+**Vlad Stadnyk** - DevOps Engineer
+- GitHub: [@vlad-ultra](https://github.com/vlad-ultra)
+- Project: Google Cloud Infrastructure Automation
+
+## 🙏 Acknowledgments
+
+- Google Cloud Platform for infrastructure
+- Terraform for Infrastructure as Code
+- HAProxy for load balancing
+- Let's Encrypt for SSL certificates
+- Nginx for web serving
+
+---
+
+**🎯 Ready for Production** - This infrastructure is production-ready and can handle real-world traffic with high availability and performance.
