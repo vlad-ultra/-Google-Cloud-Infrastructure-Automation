@@ -50,6 +50,13 @@ jobs:
       with:
         terraform_version: 1.6.0
         
+    - name: Initialize Terraform
+      run: |
+        cd infrastructure
+        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+        echo "🏗️ Initializing Terraform..."
+        terraform init -upgrade
+        
     - name: Check existing infrastructure
       run: |
         cd infrastructure
