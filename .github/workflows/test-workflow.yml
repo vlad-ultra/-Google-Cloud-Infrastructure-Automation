@@ -1,17 +1,235 @@
-name: Test Workflow
+name: 🧪 Test Infrastructure
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger only
     inputs:
-      test_input:
-        description: 'Test input'
-        required: false
-        default: 'test'
-        type: string
+      test_type:
+        description: 'Type of test to run'
+        required: true
+        default: 'connectivity'
+        type: choice
+        options:
+        - connectivity
+        - full
+        - quick
+      environment:
+        description: 'Environment to test'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+        - prod
+        - staging
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    
     steps:
-    - name: Test step
-      run: echo "Test workflow is working!"
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Test configuration
+      run: |
+        echo "🧪 Starting infrastructure test..."
+        echo "📋 Test type: ${{ github.event.inputs.test_type }}"
+        echo "🌍 Environment: ${{ github.event.inputs.environment }}"
+        echo "⏰ Test started at: $(date)"
+      
+    - name: Setup Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        export_default_credentials: true
+        
+    - name: Authenticate to Google Cloud
+      run: |
+        echo '${{ secrets.GCP_SA_KEY }}' > /tmp/gcp-key.json
+        gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+        gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
+        echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json" >> $GITHUB_ENV
+        
+    - name: Check infrastructure status
+      run: |
+        echo "🔍 Checking infrastructure status..."
+        
+        # Check if instances exist
+        INSTANCES_FOUND=0
+        INSTANCES_RUNNING=0
+        
+        for instance in web1-prod web2-prod haproxy-prod; do
+          if gcloud compute instances describe $instance --zone=europe-west1-b --quiet 2>/dev/null; then
+            echo "✅ $instance exists"
+            INSTANCES_FOUND=$((INSTANCES_FOUND + 1))
+            
+            # Check if running
+            STATUS=$(gcloud compute instances describe $instance --zone=europe-west1-b --format="value(status)" 2>/dev/null)
+            if [ "$STATUS" = "RUNNING" ]; then
+              echo "   🟢 Status: RUNNING"
+              INSTANCES_RUNNING=$((INSTANCES_RUNNING + 1))
+            else
+              echo "   🔴 Status: $STATUS"
+            fi
+          else
+            echo "❌ $instance not found"
+          fi
+        done
+        
+        echo "📊 Summary:"
+        echo "   - Instances found: $INSTANCES_FOUND/3"
+        echo "   - Instances running: $INSTANCES_RUNNING/3"
+        
+        if [ $INSTANCES_FOUND -eq 0 ]; then
+          echo "⚠️  No infrastructure found - run Deploy Infrastructure first"
+          echo "INFRA_EXISTS=false" >> $GITHUB_ENV
+        else
+          echo "✅ Infrastructure found"
+          echo "INFRA_EXISTS=true" >> $GITHUB_ENV
+        fi
+        
+        if [ $INSTANCES_RUNNING -eq 3 ]; then
+          echo "✅ All instances are running"
+          echo "ALL_RUNNING=true" >> $GITHUB_ENV
+        else
+          echo "⚠️  Some instances are not running"
+          echo "ALL_RUNNING=false" >> $GITHUB_ENV
+        fi
+        
+    - name: Test connectivity
+      if: env.INFRA_EXISTS == 'true' && env.ALL_RUNNING == 'true'
+      run: |
+        echo "🌐 Testing connectivity..."
+        
+        # Get external IPs
+        WEB1_IP=$(gcloud compute instances describe web1-prod --zone=europe-west1-b --format="value(networkInterfaces[0].accessConfigs[0].natIP)" 2>/dev/null)
+        WEB2_IP=$(gcloud compute instances describe web2-prod --zone=europe-west1-b --format="value(networkInterfaces[0].accessConfigs[0].natIP)" 2>/dev/null)
+        HAPROXY_IP=$(gcloud compute instances describe haproxy-prod --zone=europe-west1-b --format="value(networkInterfaces[0].accessConfigs[0].natIP)" 2>/dev/null)
+        
+        echo "📍 External IPs:"
+        echo "   - Web1: $WEB1_IP"
+        echo "   - Web2: $WEB2_IP"
+        echo "   - HAProxy: $HAPROXY_IP"
+        
+        # Test HTTP connectivity
+        echo "🔗 Testing HTTP connectivity..."
+        
+        # Test Web1
+        if curl -s --connect-timeout 10 --max-time 15 "http://$WEB1_IP" > /dev/null; then
+          echo "✅ Web1 HTTP: OK"
+        else
+          echo "❌ Web1 HTTP: FAILED"
+        fi
+        
+        # Test Web2
+        if curl -s --connect-timeout 10 --max-time 15 "http://$WEB2_IP" > /dev/null; then
+          echo "✅ Web2 HTTP: OK"
+        else
+          echo "❌ Web2 HTTP: FAILED"
+        fi
+        
+        # Test HAProxy
+        if curl -s --connect-timeout 10 --max-time 15 "http://$HAPROXY_IP" > /dev/null; then
+          echo "✅ HAProxy HTTP: OK"
+        else
+          echo "❌ HAProxy HTTP: FAILED"
+        fi
+        
+        # Test HTTPS connectivity
+        echo "🔒 Testing HTTPS connectivity..."
+        
+        # Test Web1 HTTPS
+        if curl -s --connect-timeout 10 --max-time 15 -k "https://$WEB1_IP" > /dev/null; then
+          echo "✅ Web1 HTTPS: OK"
+        else
+          echo "❌ Web1 HTTPS: FAILED"
+        fi
+        
+        # Test Web2 HTTPS
+        if curl -s --connect-timeout 10 --max-time 15 -k "https://$WEB2_IP" > /dev/null; then
+          echo "✅ Web2 HTTPS: OK"
+        else
+          echo "❌ Web2 HTTPS: FAILED"
+        fi
+        
+        # Test HAProxy HTTPS
+        if curl -s --connect-timeout 10 --max-time 15 -k "https://$HAPROXY_IP" > /dev/null; then
+          echo "✅ HAProxy HTTPS: OK"
+        else
+          echo "❌ HAProxy HTTPS: FAILED"
+        fi
+        
+    - name: Test load balancing
+      if: env.INFRA_EXISTS == 'true' && env.ALL_RUNNING == 'true' && github.event.inputs.test_type != 'connectivity'
+      run: |
+        echo "⚖️ Testing load balancing..."
+        
+        HAPROXY_IP=$(gcloud compute instances describe haproxy-prod --zone=europe-west1-b --format="value(networkInterfaces[0].accessConfigs[0].natIP)" 2>/dev/null)
+        
+        echo "🔄 Making 5 requests to test load balancing..."
+        
+        for i in {1..5}; do
+          echo "Request $i:"
+          RESPONSE=$(curl -s --connect-timeout 5 --max-time 10 "http://$HAPROXY_IP" 2>/dev/null || echo "No response")
+          if [[ "$RESPONSE" == *"Web Server 1"* ]]; then
+            echo "   → Web1"
+          elif [[ "$RESPONSE" == *"Web Server 2"* ]]; then
+            echo "   → Web2"
+          else
+            echo "   → $RESPONSE"
+          fi
+          sleep 1
+        done
+        
+    - name: Test domains
+      if: env.INFRA_EXISTS == 'true' && env.ALL_RUNNING == 'true' && github.event.inputs.test_type == 'full'
+      run: |
+        echo "🌍 Testing domain connectivity..."
+        
+        # Test domains
+        DOMAINS=("balancer.svdevops.tech" "web1.svdevops.tech" "web2.svdevops.tech")
+        
+        for domain in "${DOMAINS[@]}"; do
+          echo "Testing $domain..."
+          
+          # Test HTTP
+          if curl -s --connect-timeout 10 --max-time 15 "http://$domain" > /dev/null; then
+            echo "   ✅ HTTP: OK"
+          else
+            echo "   ❌ HTTP: FAILED"
+          fi
+          
+          # Test HTTPS
+          if curl -s --connect-timeout 10 --max-time 15 "https://$domain" > /dev/null; then
+            echo "   ✅ HTTPS: OK"
+          else
+            echo "   ❌ HTTPS: FAILED"
+          fi
+        done
+        
+    - name: Display test results
+      run: |
+        echo "📊 Test Results Summary"
+        echo "======================"
+        echo ""
+        echo "⏰ Test completed at: $(date)"
+        echo "🧪 Test type: ${{ github.event.inputs.test_type }}"
+        echo "🌍 Environment: ${{ github.event.inputs.environment }}"
+        echo ""
+        
+        if [ "$INFRA_EXISTS" = "false" ]; then
+          echo "⚠️  No infrastructure found"
+          echo "   Run 'Deploy Infrastructure' workflow first"
+        elif [ "$ALL_RUNNING" = "false" ]; then
+          echo "⚠️  Infrastructure exists but not all instances are running"
+          echo "   Check instance status in Google Cloud Console"
+        else
+          echo "✅ Infrastructure is running and accessible"
+          echo "   All tests completed successfully"
+        fi
+        
+        echo ""
+        echo "🔧 Available workflows:"
+        echo "   - Deploy Infrastructure: Create/update infrastructure"
+        echo "   - Remove GCP Deploy: Destroy infrastructure"
+        echo "   - Test Infrastructure: This test workflow"
