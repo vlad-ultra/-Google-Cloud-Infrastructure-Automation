@@ -20,5 +20,5 @@ web_server_count = 2
 network_cidr = "10.0.0.0/24"
 
 # Optional: Internal IPs for servers (updated with correct IPs)
-web_server_ips = ["10.132.15.217", "10.132.15.218"]
-haproxy_ip     = "10.132.15.219"
+web_server_ips = ["10.132.15.221", "10.132.15.222"]
+haproxy_ip     = "10.132.15.223"

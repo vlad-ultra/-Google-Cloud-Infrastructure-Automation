@@ -7,6 +7,7 @@ resource "google_compute_address" "web1_internal_ip" {
   address_type = "INTERNAL"
   subnetwork   = "default"
   region       = var.region
+  address      = "10.132.15.221"  # FIXED internal IP
 }
 
 # Internal IP for Web Server 2  
@@ -15,6 +16,7 @@ resource "google_compute_address" "web2_internal_ip" {
   address_type = "INTERNAL"
   subnetwork   = "default"
   region       = var.region
+  address      = "10.132.15.222"  # FIXED internal IP
 }
 
 # Internal IP for HAProxy
@@ -23,4 +25,5 @@ resource "google_compute_address" "haproxy_internal_ip" {
   address_type = "INTERNAL"
   subnetwork   = "default"
   region       = var.region
+  address      = "10.132.15.223"  # FIXED internal IP
 }
