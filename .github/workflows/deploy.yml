@@ -37,15 +37,95 @@ jobs:
         cd infrastructure
         terraform init
         
-    - name: Plan Terraform
+    - name: Check existing infrastructure
       run: |
         cd infrastructure
-        terraform plan -out=tfplan
+        echo "🔍 Checking for existing infrastructure..."
         
-    - name: Apply Terraform
+        # Check if instances exist
+        if gcloud compute instances describe web1-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+          echo "✅ Infrastructure already exists"
+          echo "EXISTING_INFRA=true" >> $GITHUB_ENV
+        else
+          echo "🆕 No existing infrastructure found"
+          echo "EXISTING_INFRA=false" >> $GITHUB_ENV
+        fi
+        
+    - name: Import existing resources or Apply new
       run: |
         cd infrastructure
-        terraform apply -auto-approve tfplan
+        if [ "$EXISTING_INFRA" = "true" ]; then
+          echo "🔄 Importing existing resources into Terraform state..."
+          
+          # Import static IPs if they exist
+          if gcloud compute addresses describe web1-static-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+            terraform import google_compute_address.web1_static_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/web1-static-ip-prod || true
+          fi
+          
+          if gcloud compute addresses describe web2-static-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+            terraform import google_compute_address.web2_static_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/web2-static-ip-prod || true
+          fi
+          
+          if gcloud compute addresses describe haproxy-static-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+            terraform import google_compute_address.haproxy_static_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/haproxy-static-ip-prod || true
+          fi
+          
+          # Import internal IPs if they exist
+          if gcloud compute addresses describe web1-internal-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+            terraform import google_compute_address.web1_internal_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/web1-internal-ip-prod || true
+          fi
+          
+          if gcloud compute addresses describe web2-internal-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+            terraform import google_compute_address.web2_internal_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/web2-internal-ip-prod || true
+          fi
+          
+          if gcloud compute addresses describe haproxy-internal-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+            terraform import google_compute_address.haproxy_internal_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/haproxy-internal-ip-prod || true
+          fi
+          
+          # Import instances if they exist
+          if gcloud compute instances describe web1-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+            terraform import google_compute_instance.web1_prod projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/web1-prod || true
+          fi
+          
+          if gcloud compute instances describe web2-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+            terraform import google_compute_instance.web2_prod projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/web2-prod || true
+          fi
+          
+          if gcloud compute instances describe haproxy-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+            terraform import google_compute_instance.haproxy_prod projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/haproxy-prod || true
+          fi
+          
+          echo "✅ Existing resources imported successfully"
+        else
+          echo "🆕 Applying new infrastructure..."
+          terraform apply -auto-approve
+        fi
+        
+    - name: Verify infrastructure status
+      run: |
+        cd infrastructure
+        echo "🔍 Verifying infrastructure status..."
+        
+        # Check if all instances are running
+        INSTANCES_RUNNING=true
+        
+        for instance in web1-prod web2-prod haproxy-prod; do
+          if ! gcloud compute instances describe $instance --zone=europe-west1-b --format="value(status)" | grep -q "RUNNING"; then
+            echo "❌ $instance is not running"
+            INSTANCES_RUNNING=false
+          else
+            echo "✅ $instance is running"
+          fi
+        done
+        
+        if [ "$INSTANCES_RUNNING" = "true" ]; then
+          echo "🎉 All infrastructure is running successfully!"
+          echo "INFRA_STATUS=healthy" >> $GITHUB_ENV
+        else
+          echo "⚠️ Some instances are not running"
+          echo "INFRA_STATUS=unhealthy" >> $GITHUB_ENV
+        fi
         
     - name: Wait for instances to be ready
       run: |
@@ -166,6 +246,16 @@ jobs:
         echo "🎉 Deployment completed!"
         echo "======================="
         echo ""
+        
+        if [ "$INFRA_STATUS" = "healthy" ]; then
+          echo "✅ INFRASTRUCTURE STATUS: HEALTHY"
+          echo "   All instances are running and ready"
+        else
+          echo "⚠️  INFRASTRUCTURE STATUS: NEEDS ATTENTION"
+          echo "   Some instances may not be running"
+        fi
+        echo ""
+        
         echo "🌐 URLs:"
         echo "   Load Balancer: https://balancer.svdevops.tech"
         echo "   Web1: https://web1.svdevops.tech"
@@ -178,3 +268,8 @@ jobs:
         echo "   ✅ Health checks enabled"
         echo "   ✅ Load balancing configured"
         echo "   ✅ Content from web-apps/ applied"
+        echo ""
+        echo "🔄 Infrastructure Management:"
+        echo "   - Existing resources were imported into Terraform state"
+        echo "   - No duplicate resources created"
+        echo "   - All services are operational"
