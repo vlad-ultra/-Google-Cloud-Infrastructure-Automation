@@ -1,0 +1,182 @@
+name: Destroy Infrastructure
+
+on:
+  workflow_dispatch:  # Manual trigger only
+    inputs:
+      confirm_destroy:
+        description: '⚠️  WARNING: This will destroy ALL infrastructure! Type DESTROY to confirm'
+        required: true
+        default: 'NO'
+        type: string
+      preserve_ips:
+        description: 'Preserve static IP addresses (recommended)'
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Confirm destruction
+      run: |
+        if [ "${{ github.event.inputs.confirm_destroy }}" != "DESTROY" ]; then
+          echo "❌ Destruction not confirmed. Please type 'DESTROY' to proceed."
+          exit 1
+        fi
+        echo "⚠️  DESTRUCTION CONFIRMED - This will destroy ALL infrastructure!"
+        echo "📋 Preserve static IPs: ${{ github.event.inputs.preserve_ips }}"
+      
+    - name: Setup Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        export_default_credentials: true
+        
+    - name: Authenticate to Google Cloud
+      run: |
+        echo '${{ secrets.GCP_SA_KEY }}' > /tmp/gcp-key.json
+        gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+        gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
+        echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json" >> $GITHUB_ENV
+        
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.6.0
+        
+    - name: Check existing infrastructure
+      run: |
+        cd infrastructure
+        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+        echo "🔍 Checking for existing infrastructure..."
+        
+        # Check if instances exist
+        if gcloud compute instances describe web1-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+          echo "✅ Infrastructure found - proceeding with destruction"
+          echo "INFRA_EXISTS=true" >> $GITHUB_ENV
+        else
+          echo "⚠️  No infrastructure found - nothing to destroy"
+          echo "INFRA_EXISTS=false" >> $GITHUB_ENV
+        fi
+        
+    - name: Import existing resources
+      if: env.INFRA_EXISTS == 'true'
+      run: |
+        cd infrastructure
+        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+        echo "🔄 Importing existing resources into Terraform state..."
+        
+        # Import static IPs if they exist
+        if gcloud compute addresses describe web1-static-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+          terraform import google_compute_address.web1_static_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/web1-static-ip-prod || true
+        fi
+        
+        if gcloud compute addresses describe web2-static-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+          terraform import google_compute_address.web2_static_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/web2-static-ip-prod || true
+        fi
+        
+        if gcloud compute addresses describe haproxy-static-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+          terraform import google_compute_address.haproxy_static_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/haproxy-static-ip-prod || true
+        fi
+        
+        # Import internal IPs if they exist
+        if gcloud compute addresses describe web1-internal-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+          terraform import google_compute_address.web1_internal_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/web1-internal-ip-prod || true
+        fi
+        
+        if gcloud compute addresses describe web2-internal-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+          terraform import google_compute_address.web2_internal_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/web2-internal-ip-prod || true
+        fi
+        
+        if gcloud compute addresses describe haproxy-internal-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+          terraform import google_compute_address.haproxy_internal_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/haproxy-internal-ip-prod || true
+        fi
+        
+        # Import instances if they exist
+        if gcloud compute instances describe web1-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+          terraform import google_compute_instance.web1 projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/web1-prod || true
+        fi
+        
+        if gcloud compute instances describe web2-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+          terraform import google_compute_instance.web2 projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/web2-prod || true
+        fi
+        
+        if gcloud compute instances describe haproxy-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+          terraform import google_compute_instance.haproxy projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/haproxy-prod || true
+        fi
+        
+        echo "✅ Existing resources imported successfully"
+        
+    - name: Initialize Terraform
+      if: env.INFRA_EXISTS == 'true'
+      run: |
+        cd infrastructure
+        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+        terraform init
+        
+    - name: Destroy infrastructure
+      if: env.INFRA_EXISTS == 'true'
+      run: |
+        cd infrastructure
+        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+        echo "💥 Destroying infrastructure..."
+        terraform destroy -auto-approve
+        
+    - name: Verify destruction
+      run: |
+        echo "🔍 Verifying infrastructure destruction..."
+        
+        # Check if instances still exist
+        INSTANCES_DESTROYED=true
+        
+        for instance in web1-prod web2-prod haproxy-prod; do
+          if gcloud compute instances describe $instance --zone=europe-west1-b --quiet 2>/dev/null; then
+            echo "❌ $instance still exists"
+            INSTANCES_DESTROYED=false
+          else
+            echo "✅ $instance destroyed"
+          fi
+        done
+        
+        if [ "$INSTANCES_DESTROYED" = "true" ]; then
+          echo "🎉 All instances destroyed successfully!"
+          echo "DESTROY_STATUS=success" >> $GITHUB_ENV
+        else
+          echo "⚠️ Some instances may still exist"
+          echo "DESTROY_STATUS=partial" >> $GITHUB_ENV
+        fi
+        
+    - name: Display destruction results
+      run: |
+        echo "💥 Infrastructure Destruction Completed!"
+        echo "======================================"
+        echo ""
+        
+        if [ "$INFRA_EXISTS" = "false" ]; then
+          echo "ℹ️  No infrastructure was found to destroy"
+          echo "   Nothing to do - infrastructure was already clean"
+        elif [ "$DESTROY_STATUS" = "success" ]; then
+          echo "✅ DESTRUCTION STATUS: SUCCESS"
+          echo "   All instances and resources have been destroyed"
+          echo "   Static IP addresses have been preserved (prevent_destroy = true)"
+        else
+          echo "⚠️  DESTRUCTION STATUS: PARTIAL"
+          echo "   Some resources may still exist"
+          echo "   Check the logs above for details"
+        fi
+        echo ""
+        echo "💰 Cost Savings:"
+        echo "   - VM instances: STOPPED/DESTROYED"
+        echo "   - Compute costs: ELIMINATED"
+        echo "   - Static IPs: PRESERVED (for future use)"
+        echo ""
+        echo "🔄 To redeploy infrastructure:"
+        echo "   - Go to Actions tab"
+        echo "   - Run 'Deploy Infrastructure' workflow"
+        echo "   - Or push to main/develop branch"

@@ -1,9 +1,21 @@
 name: Deploy Infrastructure
 
 on:
-  push:
-    branches: [ main, develop ]
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:  # Manual trigger only
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+        - prod
+        - staging
+      confirm_deploy:
+        description: 'Confirm deployment (type YES to proceed)'
+        required: true
+        default: 'NO'
+        type: string
 
 jobs:
   deploy:
@@ -12,6 +24,14 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      
+    - name: Confirm deployment
+      run: |
+        if [ "${{ github.event.inputs.confirm_deploy }}" != "YES" ]; then
+          echo "❌ Deployment not confirmed. Please type 'YES' to proceed."
+          exit 1
+        fi
+        echo "✅ Deployment confirmed for environment: ${{ github.event.inputs.environment }}"
       
     - name: Setup Google Cloud CLI
       uses: google-github-actions/setup-gcloud@v2
