@@ -47,7 +47,7 @@ echo "⏱️ This will take ~30 seconds..."
 
 START_TIME=$(date +%s)
 terraform init -upgrade
-terraform destroy -auto-approve -target=google_compute_instance.haproxy -target=google_compute_instance.web1 -target=google_compute_instance.web2 -target=google_compute_address.haproxy_internal_ip -target=google_compute_address.web1_internal_ip -target=google_compute_address.web2_internal_ip -target=google_compute_firewall.allow_http -target=google_compute_firewall.allow_https -target=google_compute_firewall.allow_ssh -target=google_compute_firewall.allow_haproxy_stats || true
+terraform destroy -auto-approve -target=google_compute_instance.haproxy -target=google_compute_instance.web1 -target=google_compute_instance.web2 -target=google_compute_firewall.allow_http -target=google_compute_firewall.allow_https -target=google_compute_firewall.allow_ssh -target=google_compute_firewall.allow_haproxy_lb -target=google_compute_firewall.allow_haproxy_web1 -target=google_compute_firewall.allow_haproxy_web2 -target=google_compute_firewall.allow_haproxy_stats -target=google_compute_firewall.allow_haproxy_stats_page || true
 END_TIME=$(date +%s)
 DESTROY_TIME=$((END_TIME - START_TIME))
 

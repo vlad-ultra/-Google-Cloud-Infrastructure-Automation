@@ -11,7 +11,7 @@ zone   = "europe-west1-b"
 environment = "prod"
 
 # Optional: Machine type - UPGRADED for faster deployment
-machine_type = "e2-standard-2"  # 2 vCPU, 8GB RAM - much faster than e2-micro
+machine_type = "e2-standard-2"  # 2 vCPU, 4GB RAM - much faster than e2-micro
 machine_memory = 4  # 4GB RAM instead of default 8GB
 
 # Optional: Number of web servers (default: 2)

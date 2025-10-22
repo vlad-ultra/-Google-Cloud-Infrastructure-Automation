@@ -8,6 +8,11 @@ resource "google_compute_address" "web1_internal_ip" {
   subnetwork   = "default"
   region       = var.region
   address      = "10.132.15.221"  # FIXED internal IP
+  
+  # Prevent accidental destruction
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Internal IP for Web Server 2  
@@ -17,6 +22,11 @@ resource "google_compute_address" "web2_internal_ip" {
   subnetwork   = "default"
   region       = var.region
   address      = "10.132.15.222"  # FIXED internal IP
+  
+  # Prevent accidental destruction
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Internal IP for HAProxy
@@ -26,4 +36,9 @@ resource "google_compute_address" "haproxy_internal_ip" {
   subnetwork   = "default"
   region       = var.region
   address      = "10.132.15.223"  # FIXED internal IP
+  
+  # Prevent accidental destruction
+  lifecycle {
+    prevent_destroy = true
+  }
 }
