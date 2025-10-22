@@ -130,21 +130,31 @@ jobs:
     - name: Destroy infrastructure
       if: env.INFRA_EXISTS == 'true'
       run: |
-        echo "💥 Destroying infrastructure using gcloud commands..."
+        cd infrastructure
+        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+        echo "💥 Destroying infrastructure using terraform (preserving static IPs)..."
+        echo "⏱️ This will take ~30 seconds..."
         
-        # Destroy instances using gcloud (preserve static IPs)
-        echo "🗑️ Destroying instances..."
-        gcloud compute instances delete web1-prod --zone=europe-west1-b --quiet || echo "web1-prod not found or already deleted"
-        gcloud compute instances delete web2-prod --zone=europe-west1-b --quiet || echo "web2-prod not found or already deleted"
-        gcloud compute instances delete haproxy-prod --zone=europe-west1-b --quiet || echo "haproxy-prod not found or already deleted"
+        START_TIME=$(date +%s)
         
-        # Destroy firewall rules using gcloud
-        echo "🔥 Destroying firewall rules..."
-        gcloud compute firewall-rules delete allow-http-prod --quiet || echo "allow-http-prod not found or already deleted"
-        gcloud compute firewall-rules delete allow-https-prod --quiet || echo "allow-https-prod not found or already deleted"
-        gcloud compute firewall-rules delete allow-ssh-prod --quiet || echo "allow-ssh-prod not found or already deleted"
-        gcloud compute firewall-rules delete allow-haproxy-stats-prod --quiet || echo "allow-haproxy-stats-prod not found or already deleted"
+        # Destroy infrastructure using terraform with specific targets (preserve static IPs)
+        terraform destroy -auto-approve \
+          -target=google_compute_instance.haproxy \
+          -target=google_compute_instance.web1 \
+          -target=google_compute_instance.web2 \
+          -target=google_compute_firewall.allow_http \
+          -target=google_compute_firewall.allow_https \
+          -target=google_compute_firewall.allow_ssh \
+          -target=google_compute_firewall.allow_haproxy_lb \
+          -target=google_compute_firewall.allow_haproxy_web1 \
+          -target=google_compute_firewall.allow_haproxy_web2 \
+          -target=google_compute_firewall.allow_haproxy_stats \
+          -target=google_compute_firewall.allow_haproxy_stats_page || true
         
+        END_TIME=$(date +%s)
+        DESTROY_TIME=$((END_TIME - START_TIME))
+        
+        echo "⏱️ Total destroy time: ${DESTROY_TIME} seconds"
         echo "✅ Infrastructure destroyed successfully (static IPs preserved)"
         
     - name: Verify destruction
