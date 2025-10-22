@@ -64,8 +64,28 @@ jobs:
         export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
         echo "🔍 Checking for existing infrastructure..."
         
-        # Check if instances exist
+        # Check if any resources exist (instances or IPs)
+        INFRA_EXISTS=false
+        
+        # Check instances
         if gcloud compute instances describe web1-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+          echo "✅ Instances exist"
+          INFRA_EXISTS=true
+        fi
+        
+        # Check static IPs
+        if gcloud compute addresses describe web1-static-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+          echo "✅ Static IPs exist"
+          INFRA_EXISTS=true
+        fi
+        
+        # Check internal IPs
+        if gcloud compute addresses describe web1-internal-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+          echo "✅ Internal IPs exist"
+          INFRA_EXISTS=true
+        fi
+        
+        if [ "$INFRA_EXISTS" = "true" ]; then
           echo "✅ Infrastructure already exists"
           echo "EXISTING_INFRA=true" >> $GITHUB_ENV
         else
