@@ -336,11 +336,34 @@ gcloud compute ssh web1-prod --zone=europe-west1-b --command="sudo journalctl -u
 
 ## 🚀 GitHub Actions CI/CD
 
-The project includes GitHub Actions workflows for:
+The project includes automated deployment via GitHub Actions:
 
-- **Automated Deployment** - Deploy on push to main
-- **Content Updates** - Update web content
-- **Monitoring** - Health checks and monitoring
+### Automated Deployment
+
+- **Trigger**: Push to `main` or `develop` branches
+- **Manual**: Can be triggered manually from GitHub Actions UI
+- **Process**: Full infrastructure deployment + content sync
+- **Testing**: Automatic load balancing tests
+
+### Setup Required
+
+1. **GitHub Secrets** (see `GITHUB-ACTIONS-SETUP.md` for details):
+   - `GCP_SA_KEY` - Google Cloud Service Account key
+   - `GCP_PROJECT_ID` - Your GCP project ID
+
+2. **Service Account Permissions**:
+   - Compute Instance Admin
+   - Compute Network Admin
+   - DNS Administrator
+   - Storage Admin
+
+### Workflow Features
+
+- ✅ **Infrastructure as Code** - Terraform deployment
+- ✅ **Content Sync** - Automatic web-apps/ content application
+- ✅ **Health Checks** - Load balancing verification
+- ✅ **Cost Optimization** - Uses e2-micro instances
+- ✅ **SSL Management** - Let's Encrypt certificates
 
 ## 📝 Contributing
 
