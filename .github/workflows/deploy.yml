@@ -1,10 +1,10 @@
-name: Deploy Infrastructure
+name: Build and Deploy Infrastructure
 
 on:
   workflow_dispatch:  # Manual trigger only
     inputs:
       environment:
-        description: 'Environment to deploy'
+        description: 'Environment to build and deploy'
         required: true
         default: 'prod'
         type: choice
@@ -12,26 +12,26 @@ on:
         - prod
         - staging
       confirm_deploy:
-        description: 'Confirm deployment (type YES to proceed)'
+        description: 'Confirm build and deployment (type YES to proceed)'
         required: true
         default: 'NO'
         type: string
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Confirm deployment
+    - name: Confirm build and deployment
       run: |
         if [ "${{ github.event.inputs.confirm_deploy }}" != "YES" ]; then
-          echo "❌ Deployment not confirmed. Please type 'YES' to proceed."
+          echo "❌ Build and deployment not confirmed. Please type 'YES' to proceed."
           exit 1
         fi
-        echo "✅ Deployment confirmed for environment: ${{ github.event.inputs.environment }}"
+        echo "✅ Build and deployment confirmed for environment: ${{ github.event.inputs.environment }}"
       
     - name: Setup Google Cloud CLI
       uses: google-github-actions/setup-gcloud@v2
