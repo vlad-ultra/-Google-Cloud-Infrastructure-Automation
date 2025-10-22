@@ -59,7 +59,7 @@ This project uses **GitHub Actions** for automated deployment and management. Al
 | Workflow | Purpose | Trigger |
 |----------|---------|---------|
 | **🚀 Build and Deploy Infrastructure** | Deploy/update infrastructure with content sync | Manual |
-| **🗑️ Remove GCP Infrastructure** | Destroy infrastructure (preserves static IPs) | Manual |
+| **🗑️ Destroy Infrastructure** | Destroy infrastructure (preserves static IPs) | Manual |
 | **🧪 Test Infrastructure** | Comprehensive infrastructure testing | Manual |
 | **📊 Monitor Infrastructure** | Health checks and monitoring | Manual |
 | **🔄 Update Content** | Update web content without redeployment | Manual |
@@ -118,7 +118,6 @@ To update web content:
 ├── 📄 README.md                    # This documentation
 ├── 📁 .github/workflows/           # GitHub Actions workflows
 │   ├── 🚀 deploy.yml               # Build and Deploy Infrastructure
-│   ├── 🗑️ remove.yml               # Remove GCP Infrastructure
 │   ├── 🧪 test-workflow.yml        # Test Infrastructure
 │   ├── 📊 monitor.yml              # Monitor Infrastructure
 │   ├── 🔄 update-content.yml       # Update Content
@@ -248,7 +247,7 @@ To update content without redeploying infrastructure:
 - **Health Checks**: Instance status verification
 - **Test Types**: `connectivity`, `full`, `quick`
 
-#### 🗑️ Remove GCP Infrastructure
+#### 🗑️ Destroy Infrastructure
 - **Safe Destruction**: Preserves static IPs and custom images
 - **Verification**: Confirms complete removal
 - **Error Handling**: Shows red status on failures
@@ -307,7 +306,7 @@ To update content without redeploying infrastructure:
    - View health status and reports
 
 5. **Remove Infrastructure**:
-   - Go to Actions → "🗑️ Remove GCP Infrastructure"
+   - Go to Actions → "🗑️ Destroy Infrastructure"
    - Click "Run workflow"
    - Type `DESTROY` to confirm
    - Choose whether to preserve IPs
