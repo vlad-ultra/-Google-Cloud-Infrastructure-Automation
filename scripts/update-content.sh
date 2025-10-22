@@ -7,8 +7,8 @@ set -e
 echo "🔄 Updating content on all servers (FIXED IPs)"
 echo "============================================="
 
-# Navigate to project directory
-cd "$(dirname "$0")"
+# Navigate to project root directory
+cd "$(dirname "$0")/.."
 
 # Get FIXED internal IPs from gcloud (hardcoded for reliability)
 echo "🔍 Getting FIXED internal IP addresses..."
