@@ -8,12 +8,14 @@ set -e
 echo "🗑️ Destroying Infrastructure (Preserving Static IPs & Images)"
 echo "============================================================"
 
-# Navigate to project directory
-cd "$(dirname "$0")"
+# Navigate to project root directory (two levels up from scripts/deployment/)
+cd "$(dirname "$0")/../.."
 
 # Check if we're in the correct directory
 if [ ! -f "infrastructure/main.tf" ]; then
     echo "❌ Error: Run script from project root directory"
+    echo "Current directory: $(pwd)"
+    echo "Looking for: infrastructure/main.tf"
     exit 1
 fi
 

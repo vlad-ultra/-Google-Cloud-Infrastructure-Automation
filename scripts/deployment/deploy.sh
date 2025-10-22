@@ -9,8 +9,8 @@ set -e
 echo "🚀 Main Deployment Script (No Config Changes)"
 echo "============================================="
 
-# Navigate to project root directory
-cd "$(dirname "$0")"
+# Navigate to project root directory (two levels up from scripts/deployment/)
+cd "$(dirname "$0")/../.."
 
 # Check if we're in the correct directory
 if [ ! -f "infrastructure/main.tf" ]; then
@@ -89,14 +89,14 @@ update_html_content() {
     
     echo "📝 Updating $server_name HTML content..."
     
-    if [ ! -f "../web-apps/$html_file" ]; then
-        echo "⚠️  ../web-apps/$html_file not found, skipping $server_name HTML update"
+    if [ ! -f "web-apps/$html_file" ]; then
+        echo "⚠️  web-apps/$html_file not found, skipping $server_name HTML update"
         return
     fi
     
     # Copy file to server
     echo "📤 Uploading $html_file to $server_name..."
-    gcloud compute scp "../web-apps/$html_file" "$server_name:~/temp.html" --zone="$zone"
+    gcloud compute scp "web-apps/$html_file" "$server_name:~/temp.html" --zone="$zone"
     
     # Apply changes on server
     gcloud compute ssh "$server_name" --zone="$zone" --command="

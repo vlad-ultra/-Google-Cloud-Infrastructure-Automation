@@ -7,6 +7,7 @@ This project provides a complete **DevOps automation solution** for deploying an
 ## ✨ Key Features
 
 - **⚡ Ultra-Fast Deployment** - Deploy infrastructure in ~30-60 seconds using pre-configured images
+- **🔄 Automatic Content Sync** - Automatically applies HTML content from `web-apps/` directory
 - **🔐 Centralized SSL Management** - Manage Let's Encrypt certificates through Google Cloud Storage
 - **⚖️ Load Balancing** - HAProxy with health checks and SSL termination
 - **🖼️ Custom Images** - Pre-configured images with all settings preserved
@@ -70,19 +71,22 @@ gcloud services enable dns.googleapis.com
 ### 3. Deploy Infrastructure
 
 ```bash
-# Deploy with pre-configured images (recommended)
+# Deploy with automatic content sync from web-apps/
 ./deploy.sh
-
-# Or deploy with custom configurations
-./apply-configs.sh
 ```
 
-### 4. Test Load Balancing
+The `deploy.sh` script automatically:
+- Deploys infrastructure using pre-configured images
+- Applies HTML content from `web-apps/` directory to all servers
+- Configures HAProxy with correct IP addresses
+- Tests load balancing functionality
 
-```bash
-# Test load balancing functionality
-./test-load-balancing.sh
-```
+### 4. Update Content
+
+To update content, simply:
+1. Edit HTML files in `web-apps/` directory
+2. Run `./deploy.sh` again
+3. Choose option 2 to update content only
 
 ## 📁 Project Structure
 
@@ -132,10 +136,9 @@ gcloud services enable dns.googleapis.com
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
-| `deploy.sh` | Main deployment using pre-configured images | `./deploy.sh` |
-| `destroy-infrastructure.sh` | Destroy infrastructure (preserves static IPs) | `./destroy-infrastructure.sh` |
-| `apply-configs.sh` | Apply configurations to existing servers | `./apply-configs.sh` |
-| `test-load-balancing.sh` | Test load balancing functionality | `./test-load-balancing.sh` |
+| `deploy.sh` | Deploy infrastructure + apply content from web-apps/ | `./deploy.sh` |
+| `destroy.sh` | Destroy infrastructure (preserves static IPs) | `./destroy.sh` |
+| `test.sh` | Test load balancing functionality | `./test.sh` |
 
 ### Image Management
 
