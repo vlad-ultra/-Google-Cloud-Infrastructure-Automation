@@ -14,6 +14,7 @@ This project provides a complete **DevOps automation solution** for deploying an
 - **🖼️ Custom Images** - Pre-configured images with all settings preserved
 - **🔧 Configuration Management** - Automated configuration backup and restore
 - **📊 Monitoring** - Built-in load balancing tests and health checks
+- **🚀 GitHub Actions CI/CD** - Automated deployment and testing workflows
 
 ## 🏗️ Architecture
 
@@ -41,21 +42,37 @@ This project provides a complete **DevOps automation solution** for deploying an
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Option 1: GitHub Actions (Recommended)
+
+1. **Fork this repository**
+2. **Set up GitHub Secrets**:
+   - Go to Settings → Secrets and variables → Actions
+   - Add `GCP_SA_KEY` (your service account JSON key)
+   - Add `GCP_PROJECT_ID` (your GCP project ID)
+3. **Deploy Infrastructure**:
+   - Go to Actions → "Build and Deploy Infrastructure"
+   - Click "Run workflow" → Select `prod` → Type `YES` → Run
+4. **Test your deployment**:
+   - Visit https://balancer.svdevops.tech
+   - Check load balancing with the testing commands below
+
+### Option 2: Local Deployment
+
+#### Prerequisites
 
 1. **Google Cloud SDK** installed and configured
 2. **Terraform** installed
 3. **Git** for version control
 4. **SSH key** for server access
 
-### 1. Clone the Repository
+#### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/vlad-ultra/-Google-Cloud-Infrastructure-Automation.git
 cd Google-Cloud-Infrastructure-Automation
 ```
 
-### 2. Configure Google Cloud
+#### 2. Configure Google Cloud
 
 ```bash
 # Authenticate with Google Cloud
@@ -69,7 +86,7 @@ gcloud services enable compute.googleapis.com
 gcloud services enable dns.googleapis.com
 ```
 
-### 3. Deploy Infrastructure
+#### 3. Deploy Infrastructure
 
 ```bash
 # Deploy with automatic content sync from web-apps/
@@ -82,19 +99,30 @@ The `deploy.sh` script automatically:
 - Configures HAProxy with correct IP addresses
 - Tests load balancing functionality
 
-### 4. Update Content
+#### 4. Test Your Deployment
+
+```bash
+# Test load balancing (should alternate between Web1 and Web2)
+for i in {1..10}; do
+  echo "Request $i:"
+  curl -s https://balancer.svdevops.tech | grep -o "Web Server [12]"
+  sleep 1
+done
+
+# Test individual servers
+curl -s https://web1.svdevops.tech
+curl -s https://web2.svdevops.tech
+
+# Test HAProxy stats
+curl -s https://balancer.svdevops.tech/stats
+```
+
+#### 5. Update Content
 
 To update content, simply:
 1. Edit HTML files in `web-apps/` directory
 2. Run `./deploy.sh` again
-3. Choose option 2 to update content only
-
-### 5. Test Load Balancing
-
-```bash
-# Test load balancing functionality
-./scripts/testing/test-load-balancing.sh
-```
+3. Content will be automatically applied to all servers
 
 ## 📁 Project Structure
 
@@ -253,14 +281,69 @@ cd scripts/ssl
 ./scripts/management/apply-configs.sh
 ```
 
-## 🌐 URLs and Access
+## 🌐 Live URLs and Testing
 
-After deployment, the following URLs will be available:
+After deployment, the following URLs will be available for testing:
 
-- **Load Balancer:** https://balancer.svdevops.tech
-- **Web Server 1:** https://web1.svdevops.tech
-- **Web Server 2:** https://web2.svdevops.tech
-- **HAProxy Stats:** http://[HAProxy_IP]:8080/stats
+### 🔗 Production URLs
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| **Load Balancer** | https://balancer.svdevops.tech | Main entry point with load balancing |
+| **Web Server 1** | https://web1.svdevops.tech | Direct access to Web Server 1 |
+| **Web Server 2** | https://web2.svdevops.tech | Direct access to Web Server 2 |
+| **HAProxy Stats** | https://balancer.svdevops.tech/stats | Load balancer statistics dashboard |
+
+### 🧪 Testing Commands
+
+#### Test Load Balancing
+```bash
+# Test load balancing (should alternate between Web1 and Web2)
+for i in {1..10}; do
+  echo "Request $i:"
+  curl -s https://balancer.svdevops.tech | grep -o "Web Server [12]"
+  sleep 1
+done
+```
+
+#### Test Individual Servers
+```bash
+# Test Web Server 1 directly
+curl -s https://web1.svdevops.tech
+
+# Test Web Server 2 directly  
+curl -s https://web2.svdevops.tech
+
+# Test HAProxy stats
+curl -s https://balancer.svdevops.tech/stats
+```
+
+#### Test SSL Certificates
+```bash
+# Check SSL certificate validity
+openssl s_client -connect balancer.svdevops.tech:443 -servername balancer.svdevops.tech < /dev/null 2>/dev/null | openssl x509 -noout -dates
+
+# Test HTTPS redirect
+curl -I http://balancer.svdevops.tech
+# Should return 301 redirect to HTTPS
+```
+
+#### Test Health Checks
+```bash
+# Check if all services are responding
+echo "Testing all endpoints..."
+curl -s -o /dev/null -w "Load Balancer: %{http_code}\n" https://balancer.svdevops.tech
+curl -s -o /dev/null -w "Web1: %{http_code}\n" https://web1.svdevops.tech  
+curl -s -o /dev/null -w "Web2: %{http_code}\n" https://web2.svdevops.tech
+```
+
+### 📊 Expected Test Results
+
+- **Load Balancer**: Should return alternating "Web Server 1" and "Web Server 2" responses
+- **Individual Servers**: Should return consistent "Web Server 1" or "Web Server 2" respectively
+- **SSL Certificates**: Should be valid Let's Encrypt certificates
+- **HTTP Redirect**: Should redirect to HTTPS (301 status)
+- **Health Checks**: All endpoints should return 200 status code
 
 ## 🔄 Content Synchronization
 
@@ -336,34 +419,131 @@ gcloud compute ssh web1-prod --zone=europe-west1-b --command="sudo journalctl -u
 
 ## 🚀 GitHub Actions CI/CD
 
-The project includes automated deployment via GitHub Actions:
+The project includes automated deployment and testing via GitHub Actions workflows:
 
-### Automated Deployment
+### 📋 Available Workflows
 
-- **Trigger**: Push to `main` or `develop` branches
-- **Manual**: Can be triggered manually from GitHub Actions UI
-- **Process**: Full infrastructure deployment + content sync
-- **Testing**: Automatic load balancing tests
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| **Build and Deploy Infrastructure** | Manual | Deploy/update infrastructure with content sync |
+| **Remove GCP Deploy** | Manual | Destroy infrastructure (preserves static IPs) |
+| **Test Infrastructure** | Manual | Comprehensive infrastructure testing |
 
-### Setup Required
+### 🔧 Workflow Features
 
-1. **GitHub Secrets** (see `GITHUB-ACTIONS-SETUP.md` for details):
-   - `GCP_SA_KEY` - Google Cloud Service Account key
-   - `GCP_PROJECT_ID` - Your GCP project ID
+#### Build and Deploy Infrastructure
+- **Authentication**: Google Cloud service account
+- **Infrastructure**: Terraform deployment with existing resource import
+- **Content Sync**: Automatic application of `web-apps/` content
+- **Testing**: Load balancing verification
+- **Time**: ~30-60 seconds deployment
+
+#### Test Infrastructure
+- **Connectivity Tests**: HTTP/HTTPS for all servers
+- **Load Balancing Tests**: Round-robin verification
+- **Domain Tests**: Full domain connectivity testing
+- **Health Checks**: Instance status verification
+- **Test Types**: `connectivity`, `full`, `quick`
+
+#### Remove GCP Deploy
+- **Safe Destruction**: Preserves static IPs and custom images
+- **Verification**: Confirms complete removal
+- **Error Handling**: Shows red status on failures
+
+### 🛠️ Setup Required
+
+1. **GitHub Secrets**:
+   ```
+   GCP_SA_KEY: Your Google Cloud Service Account JSON key
+   GCP_PROJECT_ID: Your GCP project ID
+   ```
 
 2. **Service Account Permissions**:
-   - Compute Instance Admin
-   - Compute Network Admin
-   - DNS Administrator
-   - Storage Admin
+   - `roles/compute.instanceAdmin`
+   - `roles/compute.networkAdmin`
+   - `roles/dns.admin`
+   - `roles/storage.admin`
+   - `roles/compute.securityAdmin`
 
-### Workflow Features
+### 🚀 How to Use GitHub Actions
 
-- ✅ **Infrastructure as Code** - Terraform deployment
-- ✅ **Content Sync** - Automatic web-apps/ content application
-- ✅ **Health Checks** - Load balancing verification
-- ✅ **Cost Optimization** - Uses e2-micro instances
-- ✅ **SSL Management** - Let's Encrypt certificates
+1. **Deploy Infrastructure**:
+   - Go to Actions → "Build and Deploy Infrastructure"
+   - Click "Run workflow"
+   - Select environment: `prod` or `staging`
+   - Type `YES` to confirm
+   - Click "Run workflow"
+
+2. **Test Infrastructure**:
+   - Go to Actions → "Test Infrastructure"
+   - Click "Run workflow"
+   - Select test type: `connectivity`, `full`, or `quick`
+   - Select environment: `prod` or `staging`
+   - Click "Run workflow"
+
+3. **Remove Infrastructure**:
+   - Go to Actions → "Remove GCP Deploy"
+   - Click "Run workflow"
+   - Type `DESTROY` to confirm
+   - Choose whether to preserve IPs
+   - Click "Run workflow"
+
+## 💡 Usage Examples
+
+### 🎯 Portfolio Website Deployment
+
+Perfect for showcasing your DevOps skills:
+
+```bash
+# 1. Deploy infrastructure
+# Via GitHub Actions: Go to Actions → "Build and Deploy Infrastructure" → Run
+# Or locally: ./deploy.sh
+
+# 2. Update your portfolio content
+echo "<h1>My DevOps Portfolio</h1><p>Infrastructure deployed with Terraform + GitHub Actions</p>" > web-apps/web1.html
+echo "<h1>Load Balanced Portfolio</h1><p>High availability with HAProxy</p>" > web-apps/web2.html
+
+# 3. Deploy changes
+./deploy.sh
+
+# 4. Test your live site
+curl https://balancer.svdevops.tech
+```
+
+### 🔄 CI/CD Pipeline Demo
+
+Showcase automated deployment:
+
+1. **Make changes** to `web-apps/` files
+2. **Commit and push** to GitHub
+3. **Trigger deployment** via GitHub Actions
+4. **Verify changes** are live automatically
+
+### 🧪 Load Balancing Demo
+
+Demonstrate high availability:
+
+```bash
+# Show load balancing in action
+while true; do
+  echo "$(date): $(curl -s https://balancer.svdevops.tech | grep -o 'Web Server [12]')"
+  sleep 2
+done
+```
+
+### 📊 Monitoring Demo
+
+Show infrastructure monitoring:
+
+```bash
+# Check HAProxy stats
+curl -s https://balancer.svdevops.tech/stats | grep -A 10 "Backend servers"
+
+# Test health checks
+curl -s -o /dev/null -w "Load Balancer: %{http_code}\n" https://balancer.svdevops.tech
+curl -s -o /dev/null -w "Web1: %{http_code}\n" https://web1.svdevops.tech
+curl -s -o /dev/null -w "Web2: %{http_code}\n" https://web2.svdevops.tech
+```
 
 ## 📝 Contributing
 
