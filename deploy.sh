@@ -116,9 +116,9 @@ HAPROXY_IP="34.77.23.11"
 WEB1_IP="34.76.227.170"
 WEB2_IP="34.78.104.76"
 
-# Get FIXED internal IP addresses
-WEB1_INTERNAL_IP="10.132.15.215"
-WEB2_INTERNAL_IP="10.132.15.216"
+# Get FIXED internal IP addresses (updated with correct IPs)
+WEB1_INTERNAL_IP="10.132.15.217"
+WEB2_INTERNAL_IP="10.132.15.218"
 
 echo "HAProxy IP: $HAPROXY_IP"
 echo "Web1 IP: $WEB1_IP (Internal: $WEB1_INTERNAL_IP)"
@@ -128,6 +128,18 @@ echo "Web2 IP: $WEB2_IP (Internal: $WEB2_INTERNAL_IP)"
 echo ""
 echo "⏳ Waiting for instances to be ready..."
 sleep 30
+
+# Create firewall rule for internal traffic
+echo "🔧 Creating firewall rule for internal traffic..."
+gcloud compute firewall-rules create allow-internal-http \
+    --direction=INGRESS \
+    --priority=1000 \
+    --network=default \
+    --action=ALLOW \
+    --rules=tcp:80 \
+    --source-ranges=10.0.0.0/8 \
+    --target-tags=web-server \
+    --quiet || echo "Firewall rule may already exist"
 
 # Go back to project root for file operations
 cd ..
@@ -170,9 +182,53 @@ else
     echo "⚠️  web-apps/web2.html not found, skipping Web2 HTML update"
 fi
 
+# Configure nginx on web servers to listen on internal IPs
+echo "📝 Configuring nginx on web servers..."
+gcloud compute ssh web1-prod --zone=europe-west1-b --command="
+    sudo tee /etc/nginx/sites-enabled/default > /dev/null << 'EOF'
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    listen $WEB1_INTERNAL_IP:80;
+    
+    root /var/www/html;
+    index index.html index.htm;
+    
+    server_name _;
+    
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+}
+EOF
+    sudo systemctl reload nginx
+    echo 'Nginx configured on web1'
+"
+
+gcloud compute ssh web2-prod --zone=europe-west1-b --command="
+    sudo tee /etc/nginx/sites-enabled/default > /dev/null << 'EOF'
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    listen $WEB2_INTERNAL_IP:80;
+    
+    root /var/www/html;
+    index index.html index.htm;
+    
+    server_name _;
+    
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+}
+EOF
+    sudo systemctl reload nginx
+    echo 'Nginx configured on web2'
+"
+
 # Update HAProxy configuration with FIXED internal IPs
-echo "Updating HAProxy configuration with FIXED internal IPs..."
-gcloud compute ssh haproxy-prod --zone=europe-west1-b  --command="
+echo "📝 Updating HAProxy configuration with FIXED internal IPs..."
+gcloud compute ssh haproxy-prod --zone=europe-west1-b --command="
     # Update HAProxy config with FIXED internal IPs
     sudo sed -i 's/server web1 .*:80/server web1 $WEB1_INTERNAL_IP:80/' /etc/haproxy/haproxy.cfg
     sudo sed -i 's/server web2 .*:80/server web2 $WEB2_INTERNAL_IP:80/' /etc/haproxy/haproxy.cfg

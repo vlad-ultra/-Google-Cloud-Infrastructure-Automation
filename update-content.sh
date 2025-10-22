@@ -12,8 +12,8 @@ cd "$(dirname "$0")"
 
 # Get FIXED internal IPs from gcloud (hardcoded for reliability)
 echo "🔍 Getting FIXED internal IP addresses..."
-WEB1_INTERNAL_IP="10.132.15.215"
-WEB2_INTERNAL_IP="10.132.15.216"
+WEB1_INTERNAL_IP="10.132.15.217"
+WEB2_INTERNAL_IP="10.132.15.218"
 
 echo "Web1 Internal IP: $WEB1_INTERNAL_IP"
 echo "Web2 Internal IP: $WEB2_INTERNAL_IP"
