@@ -47,8 +47,8 @@ jobs:
         # Check if instances exist
         if gcloud compute instances describe haproxy-prod --zone=europe-west1-b --quiet 2>/dev/null; then
           echo "✅ Infrastructure exists, updating content..."
-          chmod +x ./update-content.sh
-          ./update-content.sh
+          chmod +x ./scripts/update-content.sh
+          ./scripts/update-content.sh
           echo "✅ Content updated successfully"
         else
           echo "⚠️ Infrastructure not found, skipping content update"
