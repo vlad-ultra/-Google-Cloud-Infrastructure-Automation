@@ -1,82 +1,74 @@
-# Outputs for Load Balancer Infrastructure
-
-# HAProxy outputs
-output "haproxy_ip" {
-  description = "HAProxy Load Balancer Static IP"
+# External IPs
+output "haproxy_external_ip" {
+  description = "HAProxy external IP address"
   value       = google_compute_address.haproxy_static_ip.address
 }
 
-output "haproxy_ssh_command" {
-  description = "SSH command to connect to HAProxy"
-  value       = "gcloud compute ssh haproxy-${var.environment} --zone=${var.zone}"
-}
-
-output "haproxy_stats_url" {
-  description = "HAProxy Statistics URL"
-  value       = "http://${google_compute_address.haproxy_static_ip.address}:8084/stats"
-}
-
-output "haproxy_lb_url" {
-  description = "HAProxy Load Balancer URL (Port 8080)"
-  value       = "http://${google_compute_address.haproxy_static_ip.address}:8080"
-}
-
-output "haproxy_web1_url" {
-  description = "HAProxy Web1 URL (Port 8081)"
-  value       = "http://${google_compute_address.haproxy_static_ip.address}:8081"
-}
-
-output "haproxy_web2_url" {
-  description = "HAProxy Web2 URL (Port 8082)"
-  value       = "http://${google_compute_address.haproxy_static_ip.address}:8082"
-}
-
-output "haproxy_stats_redirect_url" {
-  description = "HAProxy Stats Redirect URL (Port 8083)"
-  value       = "http://${google_compute_address.haproxy_static_ip.address}:8083"
-}
-
-# Web servers outputs
-output "web1_ip" {
-  description = "Web Server 1 Static IP"
+output "web1_external_ip" {
+  description = "Web1 external IP address"
   value       = google_compute_address.web1_static_ip.address
 }
 
-output "web1_internal_ip" {
-  description = "Web Server 1 Internal IP"
-  value       = google_compute_address.web1_internal_ip.address
-}
-
-output "web2_ip" {
-  description = "Web Server 2 Static IP"
+output "web2_external_ip" {
+  description = "Web2 external IP address"
   value       = google_compute_address.web2_static_ip.address
 }
 
+# Internal IPs
+output "haproxy_internal_ip" {
+  description = "HAProxy internal IP address"
+  value       = google_compute_address.haproxy_internal_ip.address
+}
+
+output "web1_internal_ip" {
+  description = "Web1 internal IP address"
+  value       = google_compute_address.web1_internal_ip.address
+}
+
 output "web2_internal_ip" {
-  description = "Web Server 2 Internal IP"
+  description = "Web2 internal IP address"
   value       = google_compute_address.web2_internal_ip.address
 }
 
-output "web1_ssh_command" {
-  description = "SSH command to connect to Web Server 1"
-  value       = "gcloud compute ssh web1-${var.environment} --zone=${var.zone}"
-}
-
-output "web2_ssh_command" {
-  description = "SSH command to connect to Web Server 2"
-  value       = "gcloud compute ssh web2-${var.environment} --zone=${var.zone}"
-}
-
-# Load balancer URLs
+# Main URLs
 output "load_balancer_url" {
-  description = "Load Balancer URL (main entry point - Port 8080)"
-  value       = "http://${google_compute_address.haproxy_static_ip.address}:8080"
+  description = "Load Balancer URL"
+  value       = "https://balancer.svdevops.tech"
 }
 
-output "web_servers_direct_urls" {
-  description = "Direct URLs to web servers"
+output "stats_url" {
+  description = "HAProxy Stats URL"
+  value       = "https://balancer.svdevops.tech/stats"
+}
+
+output "web1_url" {
+  description = "Web1 URL"
+  value       = "https://web1.svdevops.tech"
+}
+
+output "web2_url" {
+  description = "Web2 URL"
+  value       = "https://web2.svdevops.tech"
+}
+
+# Direct access URLs (for testing)
+output "haproxy_direct_http" {
+  description = "HAProxy direct HTTP access"
+  value       = "http://${google_compute_address.haproxy_static_ip.address}:8080/stats"
+}
+
+output "haproxy_direct_https" {
+  description = "HAProxy direct HTTPS access"
+  value       = "https://${google_compute_address.haproxy_static_ip.address}:8443/stats"
+}
+
+# Project information
+output "project_info" {
+  description = "Project deployment information"
   value = {
-    "web-server-1" = "http://${google_compute_address.web1_static_ip.address}"
-    "web-server-2" = "http://${google_compute_address.web2_static_ip.address}"
+    environment = var.environment
+    region      = var.region
+    machine_type = var.machine_type
+    deployment_time = timestamp()
   }
 }

@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# 🚀 Main Deployment Script
+# ⚡ Ultra-Fast Deployment with Pre-configured Images
 # This script deploys infrastructure using pre-configured images WITHOUT modifying configurations
 # All configurations are preserved from the images
 
 set -e
 
-echo "🚀 Main Deployment Script (No Config Changes)"
-echo "============================================="
+echo "⚡ Ultra-Fast Deployment with Pre-configured Images"
+echo "================================================="
 
 # Navigate to project directory
 cd "$(dirname "$0")"
@@ -38,22 +38,15 @@ fi
 
 echo "✅ Project ID: $PROJECT_ID"
 
-# Check if infrastructure already exists
-echo "🔍 Checking if infrastructure already exists..."
-if gcloud compute instances describe haproxy-prod --zone=europe-west1-b --quiet 2>/dev/null; then
-    echo "⚠️  Infrastructure already exists. Removing old servers (preserving static IPs)..."
-    cd infrastructure
-    terraform destroy -auto-approve -target=google_compute_instance.haproxy -target=google_compute_instance.web1 -target=google_compute_instance.web2 -target=google_compute_firewall.allow_http -target=google_compute_firewall.allow_https -target=google_compute_firewall.allow_ssh -target=google_compute_firewall.allow_haproxy_lb -target=google_compute_firewall.allow_haproxy_web1 -target=google_compute_firewall.allow_haproxy_web2 -target=google_compute_firewall.allow_haproxy_stats -target=google_compute_firewall.allow_haproxy_stats_page || true
-    cd ..
-fi
+# Navigate to infrastructure directory
+cd infrastructure
 
 # Deploy infrastructure using pre-configured images
 echo ""
-echo "🏗️ Deploying infrastructure using pre-configured images (v3)..."
+echo "🚀 Deploying infrastructure with pre-configured images (v3)..."
 echo "⏱️ This will take ~30-60 seconds..."
 echo "💡 All configurations are preserved from images - NO modifications applied!"
 
-cd infrastructure
 START_TIME=$(date +%s)
 terraform init -upgrade
 terraform plan -out=tfplan
@@ -106,8 +99,8 @@ fi
 cd ..
 
 echo ""
-echo "🎉 Deployment completed!"
-echo "======================="
+echo "🎉 Ultra-fast deployment completed!"
+echo "=================================="
 echo ""
 echo "🌐 URLs:"
 echo "   Load Balancer: https://balancer.svdevops.tech"
@@ -115,7 +108,7 @@ echo "   Stats: http://$HAPROXY_IP:8080/stats"
 echo "   Web1: https://web1.svdevops.tech"
 echo "   Web2: https://web2.svdevops.tech"
 echo ""
-echo "⏱️  Total time: ~${DEPLOY_TIME} seconds"
+echo "⏱️  Total time: ~${DEPLOY_TIME} seconds (with pre-configured images)"
 echo ""
 echo "💡 All configurations are preserved from images:"
 echo "   ✅ HAProxy with Let's Encrypt certificates"
