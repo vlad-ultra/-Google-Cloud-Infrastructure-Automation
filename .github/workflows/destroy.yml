@@ -74,6 +74,13 @@ jobs:
           echo "INFRA_EXISTS=false" >> $GITHUB_ENV
         fi
         
+    - name: Initialize Terraform
+      if: env.INFRA_EXISTS == 'true'
+      run: |
+        cd infrastructure
+        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+        terraform init -upgrade
+        
     - name: Import existing resources
       if: env.INFRA_EXISTS == 'true'
       run: |
@@ -121,13 +128,6 @@ jobs:
         fi
         
         echo "✅ Existing resources imported successfully"
-        
-    - name: Initialize Terraform
-      if: env.INFRA_EXISTS == 'true'
-      run: |
-        cd infrastructure
-        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
-        terraform init -upgrade
         
     - name: Destroy infrastructure
       if: env.INFRA_EXISTS == 'true' && env.CHECK_MODE != 'true'
