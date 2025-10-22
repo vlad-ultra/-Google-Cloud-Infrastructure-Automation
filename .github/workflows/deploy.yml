@@ -56,7 +56,7 @@ jobs:
       run: |
         cd infrastructure
         export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
-        terraform init
+        terraform init -upgrade
         
     - name: Check existing infrastructure
       run: |
@@ -64,8 +64,28 @@ jobs:
         export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
         echo "🔍 Checking for existing infrastructure..."
         
-        # Check if instances exist
+        # Check if any resources exist (instances or IPs)
+        INFRA_EXISTS=false
+        
+        # Check instances
         if gcloud compute instances describe web1-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+          echo "✅ Instances exist"
+          INFRA_EXISTS=true
+        fi
+        
+        # Check static IPs
+        if gcloud compute addresses describe web1-static-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+          echo "✅ Static IPs exist"
+          INFRA_EXISTS=true
+        fi
+        
+        # Check internal IPs
+        if gcloud compute addresses describe web1-internal-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+          echo "✅ Internal IPs exist"
+          INFRA_EXISTS=true
+        fi
+        
+        if [ "$INFRA_EXISTS" = "true" ]; then
           echo "✅ Infrastructure already exists"
           echo "EXISTING_INFRA=true" >> $GITHUB_ENV
         else
@@ -106,6 +126,39 @@ jobs:
             terraform import google_compute_address.haproxy_internal_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/haproxy-internal-ip-prod || true
           fi
           
+          # Import firewall rules if they exist
+          if gcloud compute firewall-rules describe allow-ssh-prod --quiet 2>/dev/null; then
+            terraform import google_compute_firewall.allow_ssh projects/${{ secrets.GCP_PROJECT_ID }}/global/firewalls/allow-ssh-prod || true
+          fi
+          
+          if gcloud compute firewall-rules describe allow-http-prod --quiet 2>/dev/null; then
+            terraform import google_compute_firewall.allow_http projects/${{ secrets.GCP_PROJECT_ID }}/global/firewalls/allow-http-prod || true
+          fi
+          
+          if gcloud compute firewall-rules describe allow-https-prod --quiet 2>/dev/null; then
+            terraform import google_compute_firewall.allow_https projects/${{ secrets.GCP_PROJECT_ID }}/global/firewalls/allow-https-prod || true
+          fi
+          
+          if gcloud compute firewall-rules describe allow-haproxy-lb-prod --quiet 2>/dev/null; then
+            terraform import google_compute_firewall.allow_haproxy_lb projects/${{ secrets.GCP_PROJECT_ID }}/global/firewalls/allow-haproxy-lb-prod || true
+          fi
+          
+          if gcloud compute firewall-rules describe allow-haproxy-web1-prod --quiet 2>/dev/null; then
+            terraform import google_compute_firewall.allow_haproxy_web1 projects/${{ secrets.GCP_PROJECT_ID }}/global/firewalls/allow-haproxy-web1-prod || true
+          fi
+          
+          if gcloud compute firewall-rules describe allow-haproxy-web2-prod --quiet 2>/dev/null; then
+            terraform import google_compute_firewall.allow_haproxy_web2 projects/${{ secrets.GCP_PROJECT_ID }}/global/firewalls/allow-haproxy-web2-prod || true
+          fi
+          
+          if gcloud compute firewall-rules describe allow-haproxy-stats-prod --quiet 2>/dev/null; then
+            terraform import google_compute_firewall.allow_haproxy_stats projects/${{ secrets.GCP_PROJECT_ID }}/global/firewalls/allow-haproxy-stats-prod || true
+          fi
+          
+          if gcloud compute firewall-rules describe allow-haproxy-stats-page-prod --quiet 2>/dev/null; then
+            terraform import google_compute_firewall.allow_haproxy_stats_page projects/${{ secrets.GCP_PROJECT_ID }}/global/firewalls/allow-haproxy-stats-page-prod || true
+          fi
+          
           # Import instances if they exist
           if gcloud compute instances describe web1-prod --zone=europe-west1-b --quiet 2>/dev/null; then
             terraform import google_compute_instance.web1 projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/web1-prod || true
@@ -120,6 +173,10 @@ jobs:
           fi
           
           echo "✅ Existing resources imported successfully"
+          
+          # Apply any changes after import
+          echo "🔄 Applying any changes after import..."
+          terraform apply -auto-approve
         else
           echo "🆕 Applying new infrastructure..."
           terraform apply -auto-approve
@@ -299,3 +356,165 @@ jobs:
         echo "   - Existing resources were imported into Terraform state"
         echo "   - No duplicate resources created"
         echo "   - All services are operational"
+
+  remove:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'remove'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Confirm removal
+      run: |
+        echo "⚠️  REMOVAL CONFIRMED - This will destroy ALL infrastructure!"
+        echo "📋 Preserving static IPs and custom images"
+      
+    - name: Setup Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        export_default_credentials: true
+        
+    - name: Authenticate to Google Cloud
+      run: |
+        echo '${{ secrets.GCP_SA_KEY }}' > /tmp/gcp-key.json
+        gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+        gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
+        echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json" >> $GITHUB_ENV
+        
+    - name: Check existing infrastructure
+      run: |
+        echo "🔍 Checking for existing infrastructure..."
+        
+        # Check if instances exist
+        if gcloud compute instances describe web1-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+          echo "✅ Infrastructure found - proceeding with destruction"
+          echo "INFRA_EXISTS=true" >> $GITHUB_ENV
+        else
+          echo "⚠️  No infrastructure found - nothing to destroy"
+          echo "INFRA_EXISTS=false" >> $GITHUB_ENV
+        fi
+        
+    - name: Initialize Terraform
+      if: env.INFRA_EXISTS == 'true'
+      run: |
+        cd infrastructure
+        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+        terraform init -upgrade
+        
+    - name: Remove infrastructure
+      if: env.INFRA_EXISTS == 'true'
+      run: |
+        echo "🗑️ Removing infrastructure (preserving static IPs & images)..."
+        echo "⏱️ This will take ~30 seconds..."
+        
+        START_TIME=$(date +%s)
+        DESTROY_ERRORS=0
+        
+        # Destroy instances directly with gcloud
+        echo "🔄 Destroying instances..."
+        for instance in web1-prod web2-prod haproxy-prod; do
+          if gcloud compute instances describe $instance --zone=europe-west1-b --quiet 2>/dev/null; then
+            echo "🗑️ Destroying $instance..."
+            if ! gcloud compute instances delete $instance --zone=europe-west1-b --quiet; then
+              echo "❌ Failed to destroy $instance"
+              DESTROY_ERRORS=$((DESTROY_ERRORS + 1))
+            else
+              echo "✅ Successfully destroyed $instance"
+            fi
+          fi
+        done
+        
+        # Destroy firewall rules
+        echo "🔄 Destroying firewall rules..."
+        for firewall in allow-http-prod allow-https-prod allow-ssh-prod allow-haproxy-lb-prod allow-haproxy-web1-prod allow-haproxy-web2-prod allow-haproxy-stats-prod allow-haproxy-stats-page-prod; do
+          if gcloud compute firewall-rules describe $firewall --quiet 2>/dev/null; then
+            echo "🗑️ Destroying $firewall..."
+            if ! gcloud compute firewall-rules delete $firewall --quiet; then
+              echo "❌ Failed to destroy $firewall"
+              DESTROY_ERRORS=$((DESTROY_ERRORS + 1))
+            else
+              echo "✅ Successfully destroyed $firewall"
+            fi
+          fi
+        done
+        
+        END_TIME=$(date +%s)
+        DESTROY_TIME=$((END_TIME - START_TIME))
+        
+        echo "⏱️ Total destroy time: ${DESTROY_TIME} seconds"
+        
+        if [ $DESTROY_ERRORS -gt 0 ]; then
+          echo "❌ Remove completed with $DESTROY_ERRORS errors"
+          echo "DESTROY_ERRORS=$DESTROY_ERRORS" >> $GITHUB_ENV
+        else
+          echo "✅ Remove completed successfully"
+          echo "DESTROY_ERRORS=0" >> $GITHUB_ENV
+        fi
+        
+    - name: Verify removal
+      run: |
+        echo "🔍 Verifying infrastructure removal..."
+        
+        # Check if instances still exist
+        INSTANCES_DESTROYED=true
+        FAILED_INSTANCES=""
+        
+        for instance in web1-prod web2-prod haproxy-prod; do
+          if gcloud compute instances describe $instance --zone=europe-west1-b --quiet 2>/dev/null; then
+            echo "❌ $instance still exists"
+            INSTANCES_DESTROYED=false
+            FAILED_INSTANCES="$FAILED_INSTANCES $instance"
+          else
+            echo "✅ $instance destroyed"
+          fi
+        done
+        
+        if [ "$INSTANCES_DESTROYED" = "true" ]; then
+          echo "🎉 All instances destroyed successfully!"
+          echo "DESTROY_STATUS=success" >> $GITHUB_ENV
+        else
+          echo "❌ FAILED: Some instances could not be destroyed:$FAILED_INSTANCES"
+          echo "DESTROY_STATUS=failed" >> $GITHUB_ENV
+          exit 1
+        fi
+        
+    - name: Display removal results
+      run: |
+        if [ "$INFRA_EXISTS" = "false" ]; then
+          echo "ℹ️  No infrastructure was found to remove"
+          echo "   Nothing to do - infrastructure was already clean"
+        elif [ "$DESTROY_STATUS" = "failed" ]; then
+          echo "❌ REMOVAL FAILED!"
+          echo "=================="
+          echo ""
+          echo "⚠️  Some instances could not be destroyed"
+          echo "   Please check the logs above for details"
+          echo ""
+          echo "🔧 Troubleshooting:"
+          echo "- Check if instances are protected from deletion"
+          echo "- Verify permissions for gcloud compute commands"
+          echo "- Try manual deletion via Google Cloud Console"
+          echo ""
+          echo "💡 You may need to run the remove job again"
+        else
+          echo "🎉 Infrastructure removed successfully!"
+          echo "====================================="
+          echo ""
+          echo "💰 Cost Savings:"
+          echo "- All compute instances destroyed"
+          echo "- Static IPs preserved (no additional cost)"
+          echo "- Custom images preserved (for fast deployment)"
+          echo "- Ready for next deployment"
+          echo ""
+          echo "✅ Infrastructure ready for next deployment!"
+          echo ""
+          echo "🖼️ Preserved images:"
+          echo "   - haproxy-prod-image-v3"
+          echo "   - web1-prod-image-v3" 
+          echo "   - web2-prod-image-v3"
+          echo ""
+          echo "🚀 Next deployment will be ultra-fast using preserved images!"
+        fi
