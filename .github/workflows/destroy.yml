@@ -79,49 +79,32 @@ jobs:
         export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
         terraform init -upgrade
         
-    - name: Import existing resources
-      if: env.INFRA_EXISTS == 'true' && env.CHECK_MODE != 'true'
-      run: |
-        cd infrastructure
-        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
-        echo "🔄 Importing existing resources into Terraform state..."
-        
-        # Import instances if they exist
-        if gcloud compute instances describe web1-prod --zone=europe-west1-b --quiet 2>/dev/null; then
-          terraform import google_compute_instance.web1 projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/web1-prod || true
-        fi
-        
-        if gcloud compute instances describe web2-prod --zone=europe-west1-b --quiet 2>/dev/null; then
-          terraform import google_compute_instance.web2 projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/web2-prod || true
-        fi
-        
-        if gcloud compute instances describe haproxy-prod --zone=europe-west1-b --quiet 2>/dev/null; then
-          terraform import google_compute_instance.haproxy projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/haproxy-prod || true
-        fi
-        
-        echo "✅ Existing resources imported successfully"
-        
     - name: Destroy infrastructure
       if: env.INFRA_EXISTS == 'true' && env.CHECK_MODE != 'true'
       run: |
-        cd infrastructure
-        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
         echo "🗑️ Destroying infrastructure (preserving static IPs & images)..."
         echo "⏱️ This will take ~30 seconds..."
         
         START_TIME=$(date +%s)
-        terraform destroy -auto-approve \
-          -target=google_compute_instance.haproxy \
-          -target=google_compute_instance.web1 \
-          -target=google_compute_instance.web2 \
-          -target=google_compute_firewall.allow_http \
-          -target=google_compute_firewall.allow_https \
-          -target=google_compute_firewall.allow_ssh \
-          -target=google_compute_firewall.allow_haproxy_lb \
-          -target=google_compute_firewall.allow_haproxy_web1 \
-          -target=google_compute_firewall.allow_haproxy_web2 \
-          -target=google_compute_firewall.allow_haproxy_stats \
-          -target=google_compute_firewall.allow_haproxy_stats_page || true
+        
+        # Destroy instances directly with gcloud
+        echo "🔄 Destroying instances..."
+        for instance in web1-prod web2-prod haproxy-prod; do
+          if gcloud compute instances describe $instance --zone=europe-west1-b --quiet 2>/dev/null; then
+            echo "🗑️ Destroying $instance..."
+            gcloud compute instances delete $instance --zone=europe-west1-b --quiet || true
+          fi
+        done
+        
+        # Destroy firewall rules
+        echo "🔄 Destroying firewall rules..."
+        for firewall in allow-http-prod allow-https-prod allow-ssh-prod allow-haproxy-lb-prod allow-haproxy-web1-prod allow-haproxy-web2-prod allow-haproxy-stats-prod allow-haproxy-stats-page-prod; do
+          if gcloud compute firewall-rules describe $firewall --quiet 2>/dev/null; then
+            echo "🗑️ Destroying $firewall..."
+            gcloud compute firewall-rules delete $firewall --quiet || true
+          fi
+        done
+        
         END_TIME=$(date +%s)
         DESTROY_TIME=$((END_TIME - START_TIME))
         
