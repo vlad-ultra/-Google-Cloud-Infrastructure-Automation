@@ -26,7 +26,7 @@ Service Account ключ для доступа к Google Cloud Platform.
 2. **Settings** → **Secrets and variables** → **Actions**
 3. **New repository secret**
 4. Name: `GCP_SA_KEY`
-5. Value: вставьте содержимое JSON файла
+5. Value: вставьте содержимое JSON файла **как есть** (без base64 кодирования)
 
 ### 2. GCP_PROJECT_ID
 ID вашего Google Cloud проекта.
@@ -108,11 +108,13 @@ gcloud iam service-accounts keys create github-actions-key.json \
 ### Ошибка аутентификации:
 - Проверьте правильность `GCP_SA_KEY`
 - Убедитесь, что Service Account имеет необходимые роли
+- **Важно**: Добавляйте JSON ключ как есть, без base64 кодирования
+
+### Ошибка "base64: invalid input":
+- Удалите существующий `GCP_SA_KEY` secret
+- Создайте новый secret с содержимым JSON файла **как есть**
+- Не кодируйте JSON в base64 перед добавлением в GitHub
 
 ### Ошибка Terraform:
 - Проверьте, что проект ID правильный
 - Убедитесь, что APIs включены в Google Cloud
-
-### Ошибка подключения к серверам:
-- Проверьте firewall правила
-- Убедитесь, что SSH ключи настроены правильно
