@@ -12,7 +12,6 @@
 
 This project provides a complete **DevOps automation solution** for deploying and managing a highly available web infrastructure on Google Cloud Platform (GCP). The system features ultra-fast deployment using pre-configured images, cost-effective e2-micro instances, centralized SSL certificate management, and automated load balancing.
 
-> 📖 **For a complete project overview with live demo URLs, see [PROJECT-OVERVIEW.md](PROJECT-OVERVIEW.md)**
 
 ## ✨ Key Features
 
