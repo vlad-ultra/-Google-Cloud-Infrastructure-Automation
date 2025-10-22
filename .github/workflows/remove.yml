@@ -1,0 +1,194 @@
+name: Remove GCP Deploy
+
+on:
+  workflow_dispatch:  # Manual trigger only
+    inputs:
+      confirm_destroy:
+        description: '⚠️  WARNING: This will destroy ALL infrastructure! Type DESTROY to confirm'
+        required: true
+        default: 'NO'
+        type: string
+      preserve_ips:
+        description: 'Preserve static IP addresses (recommended)'
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Confirm destruction
+      run: |
+        if [ "${{ github.event.inputs.confirm_destroy }}" != "DESTROY" ]; then
+          echo "❌ Destruction not confirmed. Please type 'DESTROY' to proceed."
+          exit 1
+        fi
+        echo "⚠️  DESTRUCTION CONFIRMED - This will destroy ALL infrastructure!"
+        echo "📋 Preserve static IPs: ${{ github.event.inputs.preserve_ips }}"
+      
+    - name: Setup Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        export_default_credentials: true
+        
+    - name: Authenticate to Google Cloud
+      run: |
+        echo '${{ secrets.GCP_SA_KEY }}' > /tmp/gcp-key.json
+        gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+        gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
+        echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json" >> $GITHUB_ENV
+        
+    - name: Check existing infrastructure
+      run: |
+        echo "🔍 Checking for existing infrastructure..."
+        
+        # Check if any resources exist (instances or IPs)
+        INFRA_EXISTS=false
+        
+        # Check instances
+        if gcloud compute instances describe web1-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+          echo "✅ Instances exist"
+          INFRA_EXISTS=true
+        fi
+        
+        # Check static IPs
+        if gcloud compute addresses describe web1-static-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+          echo "✅ Static IPs exist"
+          INFRA_EXISTS=true
+        fi
+        
+        # Check internal IPs
+        if gcloud compute addresses describe web1-internal-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+          echo "✅ Internal IPs exist"
+          INFRA_EXISTS=true
+        fi
+        
+        if [ "$INFRA_EXISTS" = "true" ]; then
+          echo "✅ Infrastructure found - proceeding with destruction"
+          echo "INFRA_EXISTS=true" >> $GITHUB_ENV
+        else
+          echo "⚠️  No infrastructure found - nothing to destroy"
+          echo "INFRA_EXISTS=false" >> $GITHUB_ENV
+        fi
+        
+    - name: Destroy infrastructure
+      if: env.INFRA_EXISTS == 'true'
+      run: |
+        echo "🗑️ Destroying infrastructure (preserving static IPs & images)..."
+        echo "⏱️ This will take ~30 seconds..."
+        
+        START_TIME=$(date +%s)
+        DESTROY_ERRORS=0
+        
+        # Destroy instances directly with gcloud
+        echo "🔄 Destroying instances..."
+        for instance in web1-prod web2-prod haproxy-prod; do
+          if gcloud compute instances describe $instance --zone=europe-west1-b --quiet 2>/dev/null; then
+            echo "🗑️ Destroying $instance..."
+            if ! gcloud compute instances delete $instance --zone=europe-west1-b --quiet; then
+              echo "❌ Failed to destroy $instance"
+              DESTROY_ERRORS=$((DESTROY_ERRORS + 1))
+            else
+              echo "✅ Successfully destroyed $instance"
+            fi
+          fi
+        done
+        
+        # Destroy firewall rules
+        echo "🔄 Destroying firewall rules..."
+        for firewall in allow-http-prod allow-https-prod allow-ssh-prod allow-haproxy-lb-prod allow-haproxy-web1-prod allow-haproxy-web2-prod allow-haproxy-stats-prod allow-haproxy-stats-page-prod; do
+          if gcloud compute firewall-rules describe $firewall --quiet 2>/dev/null; then
+            echo "🗑️ Destroying $firewall..."
+            if ! gcloud compute firewall-rules delete $firewall --quiet; then
+              echo "❌ Failed to destroy $firewall"
+              DESTROY_ERRORS=$((DESTROY_ERRORS + 1))
+            else
+              echo "✅ Successfully destroyed $firewall"
+            fi
+          fi
+        done
+        
+        END_TIME=$(date +%s)
+        DESTROY_TIME=$((END_TIME - START_TIME))
+        
+        echo "⏱️ Total destroy time: ${DESTROY_TIME} seconds"
+        
+        if [ $DESTROY_ERRORS -gt 0 ]; then
+          echo "❌ Destroy completed with $DESTROY_ERRORS errors"
+          echo "DESTROY_ERRORS=$DESTROY_ERRORS" >> $GITHUB_ENV
+        else
+          echo "✅ Destroy completed successfully"
+          echo "DESTROY_ERRORS=0" >> $GITHUB_ENV
+        fi
+        
+    - name: Verify destruction
+      run: |
+        echo "🔍 Verifying infrastructure destruction..."
+        
+        # Check if instances still exist
+        INSTANCES_DESTROYED=true
+        FAILED_INSTANCES=""
+        
+        for instance in web1-prod web2-prod haproxy-prod; do
+          if gcloud compute instances describe $instance --zone=europe-west1-b --quiet 2>/dev/null; then
+            echo "❌ $instance still exists"
+            INSTANCES_DESTROYED=false
+            FAILED_INSTANCES="$FAILED_INSTANCES $instance"
+          else
+            echo "✅ $instance destroyed"
+          fi
+        done
+        
+        if [ "$INSTANCES_DESTROYED" = "true" ]; then
+          echo "🎉 All instances destroyed successfully!"
+          echo "DESTROY_STATUS=success" >> $GITHUB_ENV
+        else
+          echo "❌ FAILED: Some instances could not be destroyed:$FAILED_INSTANCES"
+          echo "DESTROY_STATUS=failed" >> $GITHUB_ENV
+          exit 1
+        fi
+        
+    - name: Display destruction results
+      run: |
+        if [ "$INFRA_EXISTS" = "false" ]; then
+          echo "ℹ️  No infrastructure was found to destroy"
+          echo "   Nothing to do - infrastructure was already clean"
+        elif [ "$DESTROY_STATUS" = "failed" ]; then
+          echo "❌ DESTRUCTION FAILED!"
+          echo "====================="
+          echo ""
+          echo "⚠️  Some instances could not be destroyed"
+          echo "   Please check the logs above for details"
+          echo ""
+          echo "🔧 Troubleshooting:"
+          echo "- Check if instances are protected from deletion"
+          echo "- Verify permissions for gcloud compute commands"
+          echo "- Try manual deletion via Google Cloud Console"
+          echo ""
+          echo "💡 You may need to run the destroy workflow again"
+        else
+          echo "🎉 Infrastructure destroyed successfully!"
+          echo "======================================="
+          echo ""
+          echo "💰 Cost Savings:"
+          echo "- All compute instances destroyed"
+          echo "- Static IPs preserved (no additional cost)"
+          echo "- Custom images preserved (for fast deployment)"
+          echo "- Ready for next deployment"
+          echo ""
+          echo "✅ Infrastructure ready for next deployment!"
+          echo ""
+          echo "🖼️ Preserved images:"
+          echo "   - haproxy-prod-image-v3"
+          echo "   - web1-prod-image-v3" 
+          echo "   - web2-prod-image-v3"
+          echo ""
+          echo "🚀 Next deployment will be ultra-fast using preserved images!"
+        fi
