@@ -12,7 +12,6 @@
 
 This project provides a complete **DevOps automation solution** for deploying and managing a highly available web infrastructure on Google Cloud Platform (GCP). The system features ultra-fast deployment using pre-configured images, cost-effective e2-micro instances, centralized SSL certificate management, and automated load balancing.
 
-
 ## ✨ Key Features
 
 - **⚡ Ultra-Fast Deployment** - Deploy infrastructure in ~30-60 seconds using pre-configured images
@@ -49,71 +48,49 @@ This project provides a complete **DevOps automation solution** for deploying an
                     └─────────────────┘
 ```
 
-## 🚀 Quick Start
+## 🚀 Production Deployment
 
-### Option 1: GitHub Actions (Recommended)
+### GitHub Actions Workflows
 
-1. **Fork this repository**
-2. **Set up GitHub Secrets**:
-   - Go to Settings → Secrets and variables → Actions
-   - Add `GCP_SA_KEY` (your service account JSON key)
-   - Add `GCP_PROJECT_ID` (your GCP project ID)
-3. **Deploy Infrastructure**:
-   - Go to Actions → "Build and Deploy Infrastructure"
-   - Click "Run workflow" → Select `prod` → Type `YES` → Run
-4. **Test your deployment**:
-   - Visit [https://balancer.svdevops.tech](https://balancer.svdevops.tech)
-   - Check load balancing with the testing commands below
+This project uses **GitHub Actions** for automated deployment and management. All workflows are configured for the `production` branch.
 
-### Option 2: Local Deployment
+#### Available Workflows
 
-#### Prerequisites
+| Workflow | Purpose | Trigger |
+|----------|---------|---------|
+| **🚀 Build and Deploy Infrastructure** | Deploy/update infrastructure with content sync | Manual |
+| **🗑️ Remove GCP Infrastructure** | Destroy infrastructure (preserves static IPs) | Manual |
+| **🧪 Test Infrastructure** | Comprehensive infrastructure testing | Manual |
+| **📊 Monitor Infrastructure** | Health checks and monitoring | Manual |
+| **🔄 Update Content** | Update web content without redeployment | Manual |
 
-1. **Google Cloud SDK** installed and configured
-2. **Terraform** installed
-3. **Git** for version control
-4. **SSH key** for server access
+#### How to Deploy
 
-#### 1. Clone the Repository
+1. **Go to GitHub Actions**:
+   - Navigate to Actions tab in this repository
+   - Select "🚀 Build and Deploy Infrastructure"
+   - Click "Run workflow"
 
-```bash
-git clone https://github.com/vlad-ultra/-Google-Cloud-Infrastructure-Automation.git
-cd Google-Cloud-Infrastructure-Automation
-```
+2. **Configure deployment**:
+   - Select branch: `production`
+   - Environment: `prod`
+   - Type `YES` to confirm deployment
 
-#### 2. Configure Google Cloud
+3. **Monitor deployment**:
+   - Watch the workflow progress in real-time
+   - Deployment takes ~30-60 seconds
+   - All content from `web-apps/` is automatically applied
 
-```bash
-# Authenticate with Google Cloud
-gcloud auth login
+#### Test Your Deployment
 
-# Set your project ID
-gcloud config set project YOUR_PROJECT_ID
+After deployment, test these URLs:
 
-# Enable required APIs
-gcloud services enable compute.googleapis.com
-gcloud services enable dns.googleapis.com
-```
+- **Load Balancer**: [https://balancer.svdevops.tech](https://balancer.svdevops.tech)
+- **Web Server 1**: [https://web1.svdevops.tech](https://web1.svdevops.tech)
+- **Web Server 2**: [https://web2.svdevops.tech](https://web2.svdevops.tech)
+- **HAProxy Stats**: [https://balancer.svdevops.tech/stats](https://balancer.svdevops.tech/stats)
 
-#### 3. Deploy Infrastructure
-
-```bash
-# Deploy infrastructure
-./deploy.sh
-
-
-
-# Check health
-curl https://balancer.svdevops.tech
-```
-
-The `deploy.sh` script automatically:
-- Deploys infrastructure using pre-configured images
-- Applies HTML content from `web-apps/` directory to all servers
-- Configures HAProxy with correct IP addresses
-- Tests load balancing functionality
-
-#### 4. Test Your Deployment
+#### Load Balancing Test
 
 ```bash
 # Test load balancing (should alternate between Web1 and Web2)
@@ -122,28 +99,31 @@ for i in {1..10}; do
   curl -s https://balancer.svdevops.tech | grep -o "Web Server [12]"
   sleep 1
 done
-
-# Test individual servers
-curl -s https://web1.svdevops.tech
-curl -s https://web2.svdevops.tech
-
-# Test HAProxy stats
-curl -s https://balancer.svdevops.tech/stats
 ```
 
-#### 5. Update Content
+#### Update Content
 
-To update content, simply:
+To update web content:
 1. Edit HTML files in `web-apps/` directory
-2. Run `./deploy.sh` again
-3. Content will be automatically applied to all servers
+2. Commit and push to `production` branch
+3. Run "🔄 Update Content" workflow
+4. Content is automatically applied to all servers
 
 ## 📁 Project Structure
 
 ```
-📁 GoogleCloud/first-project/
-├── 🚀 deploy.sh                    # Main deployment script with content sync
-├── 🗑️ destroy.sh                   # Infrastructure destruction wrapper
+📁 Google-Cloud-Infrastructure-Automation/
+├── 🚀 deploy.sh                    # Main deployment script
+├── 🗑️ destroy.sh                   # Main destruction script
+├── 📄 README.md                    # This documentation
+├── 📁 .github/workflows/           # GitHub Actions workflows
+│   ├── 🚀 deploy.yml               # Build and Deploy Infrastructure
+│   ├── 🗑️ remove.yml               # Remove GCP Infrastructure
+│   ├── 🧪 test-workflow.yml        # Test Infrastructure
+│   ├── 📊 monitor.yml              # Monitor Infrastructure
+│   ├── 🔄 update-content.yml       # Update Content
+│   ├── 🗑️ destroy.yml              # Destroy Infrastructure
+│   └── 🐛 debug-auth.yml           # Debug Authentication
 ├── 📁 infrastructure/              # Terraform configurations
 │   ├── main.tf                     # Main Terraform config
 │   ├── variables.tf                # Variables
@@ -155,149 +135,21 @@ To update content, simply:
 │   └── firewall.tf                 # Firewall rules
 ├── 📁 scripts/                     # Organized utility scripts
 │   ├── deployment/                 # Deployment scripts
-│   │   ├── deploy.sh              # Core deployment logic
-│   │   ├── destroy-infrastructure.sh # Infrastructure destruction
-│   │   └── ultra-fast-deploy.sh   # Fast deployment option
 │   ├── management/                 # Management scripts
-│   │   ├── apply-configs.sh       # Apply configurations
-│   │   ├── create-new-images.sh   # Create custom images
-│   │   └── restore-configs.sh     # Restore configurations
 │   ├── ssl/                       # SSL certificate management
-│   │   ├── ssl-manager.sh         # Interactive SSL manager
-│   │   ├── export-certs-to-gcs.sh # Export certificates to GCS
-│   │   ├── import-certs-from-gcs.sh # Import certificates from GCS
-│   │   ├── create-images-with-gcs-certs.sh # Create images with GCS certs
-│   │   └── ssl.sh                 # SSL wrapper script
-│   ├── testing/                   # Testing scripts
-│   │   └── test-load-balancing.sh # Load balancing tests
-│   ├── configure-haproxy.sh       # HAProxy configuration
-│   └── update-content.sh          # Content updates
+│   └── testing/                   # Testing scripts
 ├── 📁 web-apps/                    # Web server content (auto-synced)
-│   ├── web1.html                   # Web1 HTML content
-│   ├── web2.html                   # Web2 HTML content
+│   ├── web1.html                   # Web Server 1 content
+│   ├── web2.html                   # Web Server 2 content
 │   └── haproxy.html                # HAProxy dashboard content
-├── 📁 backups/                     # Configuration backups
-│   └── current-state/              # Current state backups
-│       ├── haproxy.cfg             # HAProxy configuration
-│       ├── web1-nginx.conf         # Web1 Nginx configuration
-│       ├── web2-nginx.conf         # Web2 Nginx configuration
-│       ├── web1-content.html       # Web1 content backup
-│       └── web2-content.html        # Web2 content backup
-└── 📄 README.md                    # This file
-```
-
-## 🔧 Scripts Overview
-
-### Main Scripts
-
-| Script | Purpose | Usage |
-|--------|---------|-------|
-| `deploy.sh` | Deploy infrastructure + auto-sync content from web-apps/ | `./deploy.sh` |
-| `destroy.sh` | Destroy infrastructure (preserves static IPs) | `./destroy.sh` |
-
-### Deployment Scripts
-
-| Script | Purpose | Usage |
-|--------|---------|-------|
-| `scripts/deployment/deploy.sh` | Core deployment logic with content sync | `./scripts/deployment/deploy.sh` |
-| `scripts/deployment/destroy-infrastructure.sh` | Infrastructure destruction | `./scripts/deployment/destroy-infrastructure.sh` |
-| `scripts/deployment/ultra-fast-deploy.sh` | Fast deployment option | `./scripts/deployment/ultra-fast-deploy.sh` |
-
-### Management Scripts
-
-| Script | Purpose | Usage |
-|--------|---------|-------|
-| `scripts/management/apply-configs.sh` | Apply configurations to existing servers | `./scripts/management/apply-configs.sh` |
-| `scripts/management/create-new-images.sh` | Create new images with current configurations | `./scripts/management/create-new-images.sh` |
-| `scripts/management/restore-configs.sh` | Restore configurations from backups | `./scripts/management/restore-configs.sh` |
-
-### SSL Management
-
-| Script | Purpose | Usage |
-|--------|---------|-------|
-| `scripts/ssl/ssl-manager.sh` | Interactive SSL management | `./scripts/ssl/ssl-manager.sh` |
-| `scripts/ssl/ssl.sh` | SSL wrapper script | `./scripts/ssl/ssl.sh` |
-| `scripts/ssl/export-certs-to-gcs.sh` | Export certificates to GCS | `./scripts/ssl/export-certs-to-gcs.sh` |
-| `scripts/ssl/import-certs-from-gcs.sh` | Import certificates from GCS | `./scripts/ssl/import-certs-from-gcs.sh` |
-
-### Testing Scripts
-
-| Script | Purpose | Usage |
-|--------|---------|-------|
-| `scripts/testing/test-load-balancing.sh` | Test load balancing functionality | `./scripts/testing/test-load-balancing.sh` |
-
-## 🔐 SSL Certificate Management
-
-### Using SSL Manager (Recommended)
-
-```bash
-# Interactive SSL management
-./scripts/ssl/ssl.sh
-```
-
-### Manual SSL Operations
-
-```bash
-# Export certificates to GCS
-cd scripts/ssl
-./export-certs-to-gcs.sh
-
-# Import certificates from GCS
-./import-certs-from-gcs.sh
-
-# Create images with GCS certificates
-./create-images-with-gcs-certs.sh
-```
-
-## 🖼️ Image Management
-
-### Creating New Images
-
-1. **Apply current configurations:**
-   ```bash
-   ./scripts/management/apply-configs.sh
-   ```
-
-2. **Create new images:**
-   ```bash
-   ./scripts/management/create-new-images.sh
-   ```
-
-3. **Update Terraform to use new images:**
-   - Edit `infrastructure/haproxy.tf`
-   - Edit `infrastructure/web-servers.tf`
-   - Update image names to new versions
-
-### Image Versions
-
-- **v3** - Current production images with correct configurations
-- **v4** - Images with GCS certificates (when created)
-
-## ⚙️ Configuration Management
-
-### Backup Current State
-
-```bash
-# Configurations are automatically backed up in backups/current-state/
-```
-
-### Restore Configurations
-
-```bash
-# Restore from backups
-./scripts/management/restore-configs.sh
-```
-
-### Apply Custom Configurations
-
-```bash
-# Apply configurations to existing servers
-./scripts/management/apply-configs.sh
+└── 📁 configs/                     # Configuration backups
+    └── current-state/              # Current configuration state
+        ├── haproxy.cfg             # HAProxy configuration
+        ├── web1-nginx.conf         # Web1 Nginx configuration
+        └── web2-nginx.conf         # Web2 Nginx configuration
 ```
 
 ## 🌐 Live URLs and Testing
-
-After deployment, the following URLs will be available for testing:
 
 ### 🔗 Production URLs
 
@@ -359,11 +211,11 @@ curl -s -o /dev/null -w "Web2: %{http_code}\n" https://web2.svdevops.tech
 - **HTTP Redirect**: Should redirect to HTTPS (301 status)
 - **Health Checks**: All endpoints should return 200 status code
 
-## 🔄 Content Synchronization
+## 🔄 Content Management
 
 ### Automatic Content Sync
 
-The `deploy.sh` script automatically applies content from the `web-apps/` directory to all servers:
+The deployment workflow automatically applies content from the `web-apps/` directory to all servers:
 
 - **web1.html** → Web Server 1
 - **web2.html** → Web Server 2  
@@ -373,96 +225,44 @@ The `deploy.sh` script automatically applies content from the `web-apps/` direct
 
 To update content without redeploying infrastructure:
 
-```bash
-# Update content on all servers
-./scripts/update-content.sh
-```
-
-### Content Workflow
-
-1. **Edit HTML files** in `web-apps/` directory
-2. **Run deploy script** - content is automatically applied
-3. **Test changes** using the testing scripts
-
-## 🔧 Troubleshooting
-
-### Common Issues
-
-1. **Load Balancer not responding:**
-   ```bash
-   # Check HAProxy status
-   gcloud compute ssh haproxy-prod --zone=europe-west1-b --command="sudo systemctl status haproxy"
-   ```
-
-2. **SSL certificates not working:**
-   ```bash
-   # Check certificate status
-   ./ssl.sh
-   # Select option 6: Test certificate validity
-   ```
-
-3. **Web servers not responding:**
-   ```bash
-   # Check Nginx status
-   gcloud compute ssh web1-prod --zone=europe-west1-b --command="sudo systemctl status nginx"
-   ```
-
-### Logs
-
-```bash
-# HAProxy logs
-gcloud compute ssh haproxy-prod --zone=europe-west1-b --command="sudo journalctl -u haproxy -f"
-
-# Nginx logs
-gcloud compute ssh web1-prod --zone=europe-west1-b --command="sudo journalctl -u nginx -f"
-```
-
-## 📊 Performance
-
-- **Deployment Time:** ~30-60 seconds
-- **Server Type:** e2-micro (1 vCPU, 1GB RAM) - cost-effective for portfolio projects
-- **Load Balancing:** Round-robin with health checks
-- **SSL:** Let's Encrypt with automatic renewal
-
-## 🔒 Security Features
-
-- **SSL/TLS Encryption** - All traffic encrypted
-- **Firewall Rules** - Restricted access to necessary ports
-- **Static IPs** - Fixed IP addresses for stability
-- **Health Checks** - Automatic failover for failed servers
+1. Edit HTML files in `web-apps/` directory
+2. Commit and push to `production` branch
+3. Run "🔄 Update Content" workflow
+4. Content is automatically applied to all servers
 
 ## 🚀 GitHub Actions CI/CD
 
-The project includes automated deployment and testing via GitHub Actions workflows:
+### Workflow Features
 
-### 📋 Available Workflows
-
-| Workflow | Trigger | Purpose |
-|----------|---------|---------|
-| **Build and Deploy Infrastructure** | Manual | Deploy/update infrastructure with content sync |
-| **Remove GCP Deploy** | Manual | Destroy infrastructure (preserves static IPs) |
-| **Test Infrastructure** | Manual | Comprehensive infrastructure testing |
-
-### 🔧 Workflow Features
-
-#### Build and Deploy Infrastructure
+#### 🚀 Build and Deploy Infrastructure
 - **Authentication**: Google Cloud service account
 - **Infrastructure**: Terraform deployment with existing resource import
 - **Content Sync**: Automatic application of `web-apps/` content
 - **Testing**: Load balancing verification
 - **Time**: ~30-60 seconds deployment
 
-#### Test Infrastructure
+#### 🧪 Test Infrastructure
 - **Connectivity Tests**: HTTP/HTTPS for all servers
 - **Load Balancing Tests**: Round-robin verification
 - **Domain Tests**: Full domain connectivity testing
 - **Health Checks**: Instance status verification
 - **Test Types**: `connectivity`, `full`, `quick`
 
-#### Remove GCP Deploy
+#### 🗑️ Remove GCP Infrastructure
 - **Safe Destruction**: Preserves static IPs and custom images
 - **Verification**: Confirms complete removal
 - **Error Handling**: Shows red status on failures
+
+#### 📊 Monitor Infrastructure
+- **Health Checks**: Instance and service status
+- **Domain Testing**: All production URLs
+- **Alerting**: Notifications on failures
+- **Reporting**: Detailed status reports
+
+#### 🔄 Update Content
+- **Content Sync**: Updates web content only
+- **No Infrastructure Changes**: Preserves existing setup
+- **Fast Updates**: Quick content deployment
 
 ### 🛠️ Setup Required
 
@@ -482,21 +282,32 @@ The project includes automated deployment and testing via GitHub Actions workflo
 ### 🚀 How to Use GitHub Actions
 
 1. **Deploy Infrastructure**:
-   - Go to Actions → "Build and Deploy Infrastructure"
+   - Go to Actions → "🚀 Build and Deploy Infrastructure"
    - Click "Run workflow"
-   - Select environment: `prod` or `staging`
+   - Select branch: `production`
+   - Select environment: `prod`
    - Type `YES` to confirm
    - Click "Run workflow"
 
 2. **Test Infrastructure**:
-   - Go to Actions → "Test Infrastructure"
+   - Go to Actions → "🧪 Test Infrastructure"
    - Click "Run workflow"
    - Select test type: `connectivity`, `full`, or `quick`
-   - Select environment: `prod` or `staging`
+   - Select environment: `prod`
    - Click "Run workflow"
 
-3. **Remove Infrastructure**:
-   - Go to Actions → "Remove GCP Deploy"
+3. **Update Content**:
+   - Go to Actions → "🔄 Update Content"
+   - Click "Run workflow"
+   - Content is automatically updated
+
+4. **Monitor Infrastructure**:
+   - Go to Actions → "📊 Monitor Infrastructure"
+   - Click "Run workflow"
+   - View health status and reports
+
+5. **Remove Infrastructure**:
+   - Go to Actions → "🗑️ Remove GCP Infrastructure"
    - Click "Run workflow"
    - Type `DESTROY` to confirm
    - Choose whether to preserve IPs
@@ -508,28 +319,17 @@ The project includes automated deployment and testing via GitHub Actions workflo
 
 Perfect for showcasing your DevOps skills:
 
-```bash
-# 1. Deploy infrastructure
-# Via GitHub Actions: Go to Actions → "Build and Deploy Infrastructure" → Run
-# Or locally: ./deploy.sh
-
-# 2. Update your portfolio content
-echo "<h1>My DevOps Portfolio</h1><p>Infrastructure deployed with Terraform + GitHub Actions</p>" > web-apps/web1.html
-echo "<h1>Load Balanced Portfolio</h1><p>High availability with HAProxy</p>" > web-apps/web2.html
-
-# 3. Deploy changes
-./deploy.sh
-
-# 4. Test your live site
-curl https://balancer.svdevops.tech
-```
+1. **Deploy infrastructure** via GitHub Actions
+2. **Update your portfolio content** in `web-apps/` files
+3. **Deploy changes** via "🔄 Update Content" workflow
+4. **Test your live site** at [https://balancer.svdevops.tech](https://balancer.svdevops.tech)
 
 ### 🔄 CI/CD Pipeline Demo
 
 Showcase automated deployment:
 
 1. **Make changes** to `web-apps/` files
-2. **Commit and push** to GitHub
+2. **Commit and push** to `production` branch
 3. **Trigger deployment** via GitHub Actions
 4. **Verify changes** are live automatically
 
@@ -558,6 +358,50 @@ curl -s -o /dev/null -w "Load Balancer: %{http_code}\n" https://balancer.svdevop
 curl -s -o /dev/null -w "Web1: %{http_code}\n" https://web1.svdevops.tech
 curl -s -o /dev/null -w "Web2: %{http_code}\n" https://web2.svdevops.tech
 ```
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+1. **Load Balancer not responding**:
+   - Check HAProxy status via Monitor workflow
+   - Verify firewall rules are correct
+
+2. **SSL certificates not working**:
+   - Check certificate status via Test workflow
+   - Verify DNS records are correct
+
+3. **Web servers not responding**:
+   - Check instance status via Monitor workflow
+   - Verify Nginx configuration
+
+### Workflow Failures
+
+1. **Authentication errors**:
+   - Verify `GCP_SA_KEY` secret is correct
+   - Check service account permissions
+
+2. **Terraform errors**:
+   - Check if resources already exist
+   - Verify project ID is correct
+
+3. **Deployment timeouts**:
+   - Check instance startup logs
+   - Verify network connectivity
+
+## 📊 Performance
+
+- **Deployment Time**: ~30-60 seconds
+- **Server Type**: e2-micro (1 vCPU, 1GB RAM) - cost-effective for portfolio projects
+- **Load Balancing**: Round-robin with health checks
+- **SSL**: Let's Encrypt with automatic renewal
+
+## 🔒 Security Features
+
+- **SSL/TLS Encryption** - All traffic encrypted
+- **Firewall Rules** - Restricted access to necessary ports
+- **Static IPs** - Fixed IP addresses for stability
+- **Health Checks** - Automatic failover for failed servers
 
 ## 📝 Contributing
 
