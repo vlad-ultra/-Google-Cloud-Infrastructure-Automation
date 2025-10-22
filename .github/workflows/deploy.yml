@@ -1,16 +1,8 @@
-name: Infrastructure Management
+name: Deploy Infrastructure
 
 on:
   workflow_dispatch:  # Manual trigger only
     inputs:
-      action:
-        description: 'Choose action to perform'
-        required: true
-        default: 'deploy'
-        type: choice
-        options:
-        - deploy
-        - remove
       environment:
         description: 'Environment to deploy'
         required: true
@@ -28,7 +20,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: github.event.inputs.action == 'deploy'
     
     steps:
     - name: Checkout code
