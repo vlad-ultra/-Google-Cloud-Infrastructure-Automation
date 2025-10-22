@@ -1,5 +1,5 @@
 name: Destroy Infrastructure
-# Manual workflow for destroying infrastructure
+# Manual workflow for destroying infrastructure - Updated
 
 on:
   workflow_dispatch:  # Manual trigger only
