@@ -106,6 +106,39 @@ jobs:
             terraform import google_compute_address.haproxy_internal_ip projects/${{ secrets.GCP_PROJECT_ID }}/regions/europe-west1/addresses/haproxy-internal-ip-prod || true
           fi
           
+          # Import firewall rules if they exist
+          if gcloud compute firewall-rules describe allow-ssh-prod --quiet 2>/dev/null; then
+            terraform import google_compute_firewall.allow_ssh projects/${{ secrets.GCP_PROJECT_ID }}/global/firewalls/allow-ssh-prod || true
+          fi
+          
+          if gcloud compute firewall-rules describe allow-http-prod --quiet 2>/dev/null; then
+            terraform import google_compute_firewall.allow_http projects/${{ secrets.GCP_PROJECT_ID }}/global/firewalls/allow-http-prod || true
+          fi
+          
+          if gcloud compute firewall-rules describe allow-https-prod --quiet 2>/dev/null; then
+            terraform import google_compute_firewall.allow_https projects/${{ secrets.GCP_PROJECT_ID }}/global/firewalls/allow-https-prod || true
+          fi
+          
+          if gcloud compute firewall-rules describe allow-haproxy-lb-prod --quiet 2>/dev/null; then
+            terraform import google_compute_firewall.allow_haproxy_lb projects/${{ secrets.GCP_PROJECT_ID }}/global/firewalls/allow-haproxy-lb-prod || true
+          fi
+          
+          if gcloud compute firewall-rules describe allow-haproxy-web1-prod --quiet 2>/dev/null; then
+            terraform import google_compute_firewall.allow_haproxy_web1 projects/${{ secrets.GCP_PROJECT_ID }}/global/firewalls/allow-haproxy-web1-prod || true
+          fi
+          
+          if gcloud compute firewall-rules describe allow-haproxy-web2-prod --quiet 2>/dev/null; then
+            terraform import google_compute_firewall.allow_haproxy_web2 projects/${{ secrets.GCP_PROJECT_ID }}/global/firewalls/allow-haproxy-web2-prod || true
+          fi
+          
+          if gcloud compute firewall-rules describe allow-haproxy-stats-prod --quiet 2>/dev/null; then
+            terraform import google_compute_firewall.allow_haproxy_stats projects/${{ secrets.GCP_PROJECT_ID }}/global/firewalls/allow-haproxy-stats-prod || true
+          fi
+          
+          if gcloud compute firewall-rules describe allow-haproxy-stats-page-prod --quiet 2>/dev/null; then
+            terraform import google_compute_firewall.allow_haproxy_stats_page projects/${{ secrets.GCP_PROJECT_ID }}/global/firewalls/allow-haproxy-stats-page-prod || true
+          fi
+          
           # Import instances if they exist
           if gcloud compute instances describe web1-prod --zone=europe-west1-b --quiet 2>/dev/null; then
             terraform import google_compute_instance.web1 projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/web1-prod || true
@@ -120,6 +153,10 @@ jobs:
           fi
           
           echo "✅ Existing resources imported successfully"
+          
+          # Apply any changes after import
+          echo "🔄 Applying any changes after import..."
+          terraform apply -auto-approve
         else
           echo "🆕 Applying new infrastructure..."
           terraform apply -auto-approve
