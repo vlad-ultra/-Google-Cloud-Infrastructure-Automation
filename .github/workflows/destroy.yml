@@ -133,7 +133,14 @@ jobs:
         cd infrastructure
         export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
         echo "💥 Destroying infrastructure..."
-        terraform destroy -auto-approve
+        
+        # Destroy instances only (preserve static IPs)
+        echo "🗑️ Destroying instances..."
+        terraform destroy -auto-approve -target=google_compute_instance.web1 -target=google_compute_instance.web2 -target=google_compute_instance.haproxy || true
+        
+        # Destroy firewall rules
+        echo "🔥 Destroying firewall rules..."
+        terraform destroy -auto-approve -target=google_compute_firewall.allow_http -target=google_compute_firewall.allow_https -target=google_compute_firewall.allow_ssh -target=google_compute_firewall.allow_haproxy_stats || true
         
     - name: Verify destruction
       run: |
