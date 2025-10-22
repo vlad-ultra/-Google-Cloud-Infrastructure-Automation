@@ -48,19 +48,37 @@ jobs:
         if gcloud compute instances describe haproxy-prod --zone=europe-west1-b --quiet 2>/dev/null; then
           echo "✅ Infrastructure exists, updating content..."
           
+          # Get FIXED internal IPs (hardcoded for reliability)
+          WEB1_INTERNAL_IP="10.132.15.221"
+          WEB2_INTERNAL_IP="10.132.15.222"
+          
+          echo "Web1 Internal IP: $WEB1_INTERNAL_IP"
+          echo "Web2 Internal IP: $WEB2_INTERNAL_IP"
+          
           # Update web1 HTML
+          echo ""
           echo "📝 Updating Web1 HTML..."
           if [ -f "web-apps/web1.html" ]; then
             gcloud compute scp web-apps/web1.html web1-prod:~/web1.html --zone=europe-west1-b
             gcloud compute ssh web1-prod --zone=europe-west1-b --command="
+              # Remove old content
               sudo rm -f /var/www/html/index.html
+              sudo rm -f /var/www/html/index.html.*
+              # Copy new content
               sudo cp ~/web1.html /var/www/html/index.html
-              sudo chown www-data:www-data /var/www/html/index.html
-              sudo systemctl reload nginx
+              sudo chown root:root /var/www/html/index.html
+              sudo chmod 644 /var/www/html/index.html
+              # Clean up temp file
+              rm -f ~/web1.html
+              # Clear nginx cache and restart
+              sudo nginx -s stop || true
+              sudo systemctl start nginx
+              sudo systemctl restart nginx
+              echo 'Web1 updated successfully - old content removed'
             "
             echo "✅ Web1 content updated"
           else
-            echo "⚠️ web-apps/web1.html not found"
+            echo "⚠️ web-apps/web1.html not found, skipping Web1 HTML update"
           fi
           
           # Update web2 HTML
@@ -68,30 +86,64 @@ jobs:
           if [ -f "web-apps/web2.html" ]; then
             gcloud compute scp web-apps/web2.html web2-prod:~/web2.html --zone=europe-west1-b
             gcloud compute ssh web2-prod --zone=europe-west1-b --command="
+              # Remove old content
               sudo rm -f /var/www/html/index.html
+              sudo rm -f /var/www/html/index.html.*
+              # Copy new content
               sudo cp ~/web2.html /var/www/html/index.html
-              sudo chown www-data:www-data /var/www/html/index.html
-              sudo systemctl reload nginx
+              sudo chown root:root /var/www/html/index.html
+              sudo chmod 644 /var/www/html/index.html
+              # Clean up temp file
+              rm -f ~/web2.html
+              # Clear nginx cache and restart
+              sudo nginx -s stop || true
+              sudo systemctl start nginx
+              sudo systemctl restart nginx
+              echo 'Web2 updated successfully - old content removed'
             "
             echo "✅ Web2 content updated"
           else
-            echo "⚠️ web-apps/web2.html not found"
+            echo "⚠️ web-apps/web2.html not found, skipping Web2 HTML update"
           fi
           
-          # Update HAProxy HTML
-          echo "📝 Updating HAProxy HTML..."
+          # Update HAProxy configuration with FIXED internal IPs
+          echo "📝 Updating HAProxy configuration with FIXED internal IPs..."
+          gcloud compute ssh haproxy-prod --zone=europe-west1-b --command="
+            # Update HAProxy config with FIXED internal IPs
+            sudo sed -i 's/server web1 .*:80/server web1 $WEB1_INTERNAL_IP:80/' /etc/haproxy/haproxy.cfg
+            sudo sed -i 's/server web2 .*:80/server web2 $WEB2_INTERNAL_IP:80/' /etc/haproxy/haproxy.cfg
+            sudo systemctl restart haproxy
+            echo 'HAProxy configuration updated with FIXED internal IPs'
+          "
+          
+          # Update HAProxy dashboard
+          echo "📝 Updating HAProxy dashboard..."
           if [ -f "web-apps/haproxy.html" ]; then
             gcloud compute scp web-apps/haproxy.html haproxy-prod:~/haproxy.html --zone=europe-west1-b
             gcloud compute ssh haproxy-prod --zone=europe-west1-b --command="
+              # Remove old content
+              sudo rm -f /var/www/html/index.html
+              sudo rm -f /var/www/html/index.html.*
+              # Copy new content
               sudo cp ~/haproxy.html /var/www/html/index.html
-              sudo chown www-data:www-data /var/www/html/index.html
+              sudo chown root:root /var/www/html/index.html
+              sudo chmod 644 /var/www/html/index.html
+              # Clean up temp file
+              rm -f ~/haproxy.html
+              # Clear nginx cache and restart
+              sudo nginx -s stop || true
+              sudo systemctl start nginx
+              sudo systemctl restart nginx
+              echo 'HAProxy dashboard updated successfully - old content removed'
             "
             echo "✅ HAProxy content updated"
           else
-            echo "⚠️ web-apps/haproxy.html not found"
+            echo "⚠️ web-apps/haproxy.html not found, skipping HAProxy dashboard update"
           fi
           
-          echo "✅ Content updated successfully"
+          echo ""
+          echo "✅ All content updated successfully with FIXED internal IPs!"
+          echo "🌐 Check your load balancer: https://balancer.svdevops.tech"
         else
           echo "⚠️ Infrastructure not found, skipping content update"
           echo "Run deploy workflow first to create infrastructure"
