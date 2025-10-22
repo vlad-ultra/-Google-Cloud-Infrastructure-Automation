@@ -1,4 +1,4 @@
-name: Remove 
+name: Remove GCP Deploy
 
 on:
   workflow_dispatch:  # Manual trigger only
@@ -27,10 +27,9 @@ jobs:
         if [ "${{ github.event.inputs.confirm_destroy }}" != "DESTROY" ]; then
           echo "❌ Destruction not confirmed. Please type 'DESTROY' to proceed."
           exit 1
-        else
-          echo "⚠️  DESTRUCTION CONFIRMED - This will destroy ALL infrastructure!"
-          echo "📋 Preserve static IPs: ${{ github.event.inputs.preserve_ips }}"
         fi
+        echo "⚠️  DESTRUCTION CONFIRMED - This will destroy ALL infrastructure!"
+        echo "📋 Preserve static IPs: ${{ github.event.inputs.preserve_ips }}"
       
     - name: Setup Google Cloud CLI
       uses: google-github-actions/setup-gcloud@v2
@@ -46,30 +45,38 @@ jobs:
         gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
         echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json" >> $GITHUB_ENV
         
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: 1.6.0
-        
     - name: Check existing infrastructure
       run: |
         echo "🔍 Checking for existing infrastructure..."
         
-        # Check if instances exist
+        # Check if any resources exist (instances or IPs)
+        INFRA_EXISTS=false
+        
+        # Check instances
         if gcloud compute instances describe web1-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+          echo "✅ Instances exist"
+          INFRA_EXISTS=true
+        fi
+        
+        # Check static IPs
+        if gcloud compute addresses describe web1-static-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+          echo "✅ Static IPs exist"
+          INFRA_EXISTS=true
+        fi
+        
+        # Check internal IPs
+        if gcloud compute addresses describe web1-internal-ip-prod --region=europe-west1 --quiet 2>/dev/null; then
+          echo "✅ Internal IPs exist"
+          INFRA_EXISTS=true
+        fi
+        
+        if [ "$INFRA_EXISTS" = "true" ]; then
           echo "✅ Infrastructure found - proceeding with destruction"
           echo "INFRA_EXISTS=true" >> $GITHUB_ENV
         else
           echo "⚠️  No infrastructure found - nothing to destroy"
           echo "INFRA_EXISTS=false" >> $GITHUB_ENV
         fi
-        
-    - name: Initialize Terraform
-      if: env.INFRA_EXISTS == 'true'
-      run: |
-        cd infrastructure
-        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
-        terraform init -upgrade
         
     - name: Destroy infrastructure
       if: env.INFRA_EXISTS == 'true'
