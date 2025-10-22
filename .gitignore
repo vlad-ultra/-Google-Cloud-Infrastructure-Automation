@@ -2,7 +2,7 @@
 *.tfstate
 *.tfstate.*
 .terraform/
-.terraform.lock.hcl
+# .terraform.lock.hcl  # Keep this file for consistent provider versions
 *.tfplan
 *.tfplan.*
 

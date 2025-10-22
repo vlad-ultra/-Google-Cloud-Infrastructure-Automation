@@ -34,6 +34,13 @@ jobs:
       with:
         terraform_version: 1.6.0
 
+    - name: 🔑 Setup Terraform Credentials
+      run: |
+        echo "🔑 Setting up Terraform credentials..."
+        echo "${{ secrets.GCP_SA_KEY }}" > /tmp/gcp-key.json
+        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+        echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json" >> $GITHUB_ENV
+
     - name: 🏗️ Deploy Infrastructure
       run: |
         echo "🚀 Starting infrastructure deployment..."
@@ -41,6 +48,7 @@ jobs:
         ./deploy.sh
       env:
         GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        GOOGLE_APPLICATION_CREDENTIALS: /tmp/gcp-key.json
 
     - name: 🧪 Test Deployment
       run: |
