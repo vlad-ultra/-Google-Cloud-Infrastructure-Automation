@@ -1,4 +1,4 @@
-name: Destroy Infrastructure
+name: 🗑️ Destroy Infrastructure
 
 on:
   workflow_dispatch:  # Manual trigger only

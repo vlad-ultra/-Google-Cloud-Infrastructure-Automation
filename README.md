@@ -1,8 +1,18 @@
 # 🚀 Google Cloud Infrastructure Automation
 
+> **Professional DevOps automation solution for deploying highly available web infrastructure on Google Cloud Platform**
+
+[![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-Ready-brightgreen)](https://github.com/vlad-ultra/-Google-Cloud-Infrastructure-Automation/actions)
+[![Terraform](https://img.shields.io/badge/Terraform-Infrastructure%20as%20Code-blue)](https://terraform.io)
+[![Google Cloud](https://img.shields.io/badge/Google%20Cloud-Platform-orange)](https://cloud.google.com)
+[![HAProxy](https://img.shields.io/badge/HAProxy-Load%20Balancer-red)](https://haproxy.org)
+[![Nginx](https://img.shields.io/badge/Nginx-Web%20Server-green)](https://nginx.org)
+
 ## 📋 Project Overview
 
 This project provides a complete **DevOps automation solution** for deploying and managing a highly available web infrastructure on Google Cloud Platform (GCP). The system features ultra-fast deployment using pre-configured images, cost-effective e2-micro instances, centralized SSL certificate management, and automated load balancing.
+
+> 📖 **For a complete project overview with live demo URLs, see [PROJECT-OVERVIEW.md](PROJECT-OVERVIEW.md)**
 
 ## ✨ Key Features
 

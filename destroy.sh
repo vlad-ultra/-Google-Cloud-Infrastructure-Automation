@@ -1,25 +1,23 @@
 #!/bin/bash
 
-# 🗑️ Infrastructure Destruction Script Wrapper
-# This script provides easy access to infrastructure destruction
+# 🗑️ Google Cloud Infrastructure Destruction Script
+# Main wrapper script that calls the core destruction logic
 
 set -e
 
 echo "🗑️ Google Cloud Infrastructure Destruction"
 echo "=========================================="
+echo ""
 
-# Navigate to project directory
-cd "$(dirname "$0")"
-
-# Check if we're in the correct directory
-if [ ! -f "infrastructure/main.tf" ]; then
-    echo "❌ Error: Run script from project root directory"
+# Check if we're in the right directory
+if [ ! -f "scripts/deployment/destroy-infrastructure.sh" ]; then
+    echo "❌ Error: Please run this script from the project root directory"
+    echo "   Expected: scripts/deployment/destroy-infrastructure.sh"
     exit 1
 fi
 
-echo " Working directory: $(pwd)"
+# Call the core destruction script
+echo "📁 Calling core destruction script..."
 echo ""
 
-# Run the actual destruction script
-echo "🗑️ Starting infrastructure destruction..."
-exec ./scripts/deployment/destroy-infrastructure.sh
+exec ./scripts/deployment/destroy-infrastructure.sh "$@"

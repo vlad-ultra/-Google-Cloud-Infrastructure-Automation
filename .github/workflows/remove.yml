@@ -1,4 +1,4 @@
-name: Remove GCP Deploy
+name: 🗑️ Remove GCP Infrastructure
 
 on:
   workflow_dispatch:  # Manual trigger only
