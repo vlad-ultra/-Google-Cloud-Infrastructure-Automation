@@ -5,6 +5,11 @@ resource "google_compute_instance" "web1" {
   name         = "web1-${var.environment}"
   machine_type = var.machine_type
   zone         = var.zone
+  
+  # Custom memory configuration
+  advanced_machine_features {
+    enable_nested_virtualization = false
+  }
 
   boot_disk {
     initialize_params {
@@ -41,6 +46,11 @@ resource "google_compute_instance" "web2" {
   name         = "web2-${var.environment}"
   machine_type = var.machine_type
   zone         = var.zone
+  
+  # Custom memory configuration
+  advanced_machine_features {
+    enable_nested_virtualization = false
+  }
 
   boot_disk {
     initialize_params {

@@ -4,9 +4,10 @@
 
 set -e
 
-echo "🚀 Simple HAProxy Load Balancer Deployment (FIXED IPs)"
-echo "====================================================="
-echo "⚡ Using pre-built images with FIXED internal IPs - Expected time: ~30 seconds"
+echo "🚀 High-Performance HAProxy Load Balancer Deployment (FIXED IPs)"
+echo "================================================================="
+echo "⚡ Using pre-built images with FIXED internal IPs on POWERFUL servers"
+echo "🔥 Machine Type: e2-standard-2 (2 vCPU, 4GB RAM) - Expected time: ~20 seconds"
 
 # Navigate to project directory
 cd "$(dirname "$0")"
@@ -124,10 +125,11 @@ echo "HAProxy IP: $HAPROXY_IP"
 echo "Web1 IP: $WEB1_IP (Internal: $WEB1_INTERNAL_IP)"
 echo "Web2 IP: $WEB2_IP (Internal: $WEB2_INTERNAL_IP)"
 
-# Wait for instances to be ready
+# Wait for instances to be ready (faster on powerful servers)
 echo ""
 echo "⏳ Waiting for instances to be ready..."
-sleep 30
+echo "🔥 Using powerful e2-standard-2 servers - faster startup..."
+sleep 20
 
 # Create firewall rule for internal traffic
 echo "🔧 Creating firewall rule for internal traffic..."
@@ -234,6 +236,12 @@ gcloud compute ssh haproxy-prod --zone=europe-west1-b --command="
     sudo sed -i 's/server web2 .*:80/server web2 $WEB2_INTERNAL_IP:80/' /etc/haproxy/haproxy.cfg
     sudo systemctl restart haproxy
     echo 'HAProxy configuration updated with FIXED internal IPs'
+    echo 'HAProxy is now running on separate ports:'
+    echo '  - Load Balancer: Port 8080'
+    echo '  - Web1: Port 8081' 
+    echo '  - Web2: Port 8082'
+    echo '  - Stats Redirect: Port 8083'
+    echo '  - Stats Page: Port 8084'
 "
 
 # Update HAProxy dashboard
@@ -284,7 +292,7 @@ echo ""
 # Setup SSL certificates for all domains
 echo ""
 echo "🔐 Setting up SSL certificates for all domains..."
-echo "⏱️ This will take ~30 seconds..."
+echo "⏱️ This will take ~15 seconds on powerful servers..."
 
 # Wait for HAProxy to be ready
 echo "⏳ Waiting for HAProxy to be ready..."

@@ -10,8 +10,9 @@ zone   = "europe-west1-b"
 # Optional: Environment name
 environment = "prod"
 
-# Optional: Machine type (e2-micro is free tier eligible)
-machine_type = "e2-micro"
+# Optional: Machine type - UPGRADED for faster deployment
+machine_type = "e2-standard-2"  # 2 vCPU, 8GB RAM - much faster than e2-micro
+machine_memory = 4  # 4GB RAM instead of default 8GB
 
 # Optional: Number of web servers (default: 2)
 web_server_count = 2

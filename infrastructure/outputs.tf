@@ -13,7 +13,27 @@ output "haproxy_ssh_command" {
 
 output "haproxy_stats_url" {
   description = "HAProxy Statistics URL"
-  value       = "http://${google_compute_address.haproxy_static_ip.address}:8080/stats"
+  value       = "http://${google_compute_address.haproxy_static_ip.address}:8084/stats"
+}
+
+output "haproxy_lb_url" {
+  description = "HAProxy Load Balancer URL (Port 8080)"
+  value       = "http://${google_compute_address.haproxy_static_ip.address}:8080"
+}
+
+output "haproxy_web1_url" {
+  description = "HAProxy Web1 URL (Port 8081)"
+  value       = "http://${google_compute_address.haproxy_static_ip.address}:8081"
+}
+
+output "haproxy_web2_url" {
+  description = "HAProxy Web2 URL (Port 8082)"
+  value       = "http://${google_compute_address.haproxy_static_ip.address}:8082"
+}
+
+output "haproxy_stats_redirect_url" {
+  description = "HAProxy Stats Redirect URL (Port 8083)"
+  value       = "http://${google_compute_address.haproxy_static_ip.address}:8083"
 }
 
 # Web servers outputs
@@ -49,8 +69,8 @@ output "web2_ssh_command" {
 
 # Load balancer URLs
 output "load_balancer_url" {
-  description = "Load Balancer URL (main entry point)"
-  value       = "http://${google_compute_address.haproxy_static_ip.address}"
+  description = "Load Balancer URL (main entry point - Port 8080)"
+  value       = "http://${google_compute_address.haproxy_static_ip.address}:8080"
 }
 
 output "web_servers_direct_urls" {
