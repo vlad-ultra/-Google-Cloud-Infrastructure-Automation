@@ -24,21 +24,25 @@ echo "🔐 Checking Google Cloud authentication..."
 echo "Current account: $(gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null || echo 'None')"
 echo "Project: $(gcloud config get-value project 2>/dev/null || echo 'Not set')"
 
-# Check if we're in GitHub Actions
-if [ -n "$GITHUB_ACTIONS" ]; then
-    echo "🤖 Running in GitHub Actions"
-    echo "GCP_PROJECT_ID: ${GCP_PROJECT_ID:-'Not set'}"
-    echo "GCP_SA_KEY: ${GCP_SA_KEY:+Set}${GCP_SA_KEY:-'Not set'}"
-    
-    # Try to authenticate with service account
-    if [ -n "$GCP_SA_KEY" ]; then
-        echo "🔑 Authenticating with service account..."
-        echo "$GCP_SA_KEY" > /tmp/gcp-key.json
-        gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
-        gcloud config set project "$GCP_PROJECT_ID"
-        rm -f /tmp/gcp-key.json
+    # Check if we're in GitHub Actions
+    if [ -n "$GITHUB_ACTIONS" ]; then
+        echo "🤖 Running in GitHub Actions"
+        echo "GCP_PROJECT_ID: ${GCP_PROJECT_ID:-'Not set'}"
+        echo "GCP_SA_KEY: ${GCP_SA_KEY:+Set}${GCP_SA_KEY:-'Not set'}"
+
+        # Try to authenticate with service account
+        if [ -n "$GCP_SA_KEY" ]; then
+            echo "🔑 Authenticating with service account..."
+            echo "$GCP_SA_KEY" > /tmp/gcp-key.json
+            gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+            gcloud config set project "$GCP_PROJECT_ID"
+            # Don't remove the key file - Terraform needs it
+            echo "🔑 Credentials file created for Terraform: /tmp/gcp-key.json"
+            # Set environment variable for Terraform
+            export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+            echo "🔑 GOOGLE_APPLICATION_CREDENTIALS set to: $GOOGLE_APPLICATION_CREDENTIALS"
+        fi
     fi
-fi
 
 if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q .; then
     echo "❌ Error: Not authenticated to Google Cloud"
