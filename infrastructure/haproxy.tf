@@ -4,9 +4,6 @@ resource "google_compute_instance" "haproxy" {
   machine_type = var.machine_type
   zone         = "${var.region}-b"
 
-  # Allow stopping for updates (required for machine_type changes)
-  allow_stopping_for_update = true
-
   # Advanced machine features for custom memory
   advanced_machine_features {
     enable_nested_virtualization = false

@@ -1,7 +1,7 @@
-name: Remove GCP Deploy
+name: 🗑️ Remove GCP Infrastructure
 
 on:
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:  # Manual trigger only
     inputs:
       confirm_destroy:
         description: '⚠️  WARNING: This will destroy ALL infrastructure! Type DESTROY to confirm'
@@ -13,16 +13,6 @@ on:
         required: true
         default: true
         type: boolean
-  push:
-    branches:
-      - develop
-    paths:
-      - '.github/workflows/remove.yml'
-  pull_request:
-    branches:
-      - develop
-    paths:
-      - '.github/workflows/remove.yml'
 
 jobs:
   destroy:
@@ -32,18 +22,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Check if manual trigger
-      run: |
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          echo "✅ Manual trigger detected"
-          echo "MANUAL_TRIGGER=true" >> $GITHUB_ENV
-        else
-          echo "⚠️  Automatic trigger detected - skipping execution for safety"
-          echo "MANUAL_TRIGGER=false" >> $GITHUB_ENV
-        fi
-      
     - name: Confirm destruction
-      if: env.MANUAL_TRIGGER == 'true'
       run: |
         if [ "${{ github.event.inputs.confirm_destroy }}" != "DESTROY" ]; then
           echo "❌ Destruction not confirmed. Please type 'DESTROY' to proceed."
