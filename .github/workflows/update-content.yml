@@ -47,8 +47,50 @@ jobs:
         # Check if instances exist
         if gcloud compute instances describe haproxy-prod --zone=europe-west1-b --quiet 2>/dev/null; then
           echo "✅ Infrastructure exists, updating content..."
-          chmod +x ./scripts/update-content.sh
-          ./scripts/update-content.sh
+          
+          # Update web1 HTML
+          echo "📝 Updating Web1 HTML..."
+          if [ -f "web-apps/web1.html" ]; then
+            gcloud compute scp web-apps/web1.html web1-prod:~/web1.html --zone=europe-west1-b
+            gcloud compute ssh web1-prod --zone=europe-west1-b --command="
+              sudo rm -f /var/www/html/index.html
+              sudo cp ~/web1.html /var/www/html/index.html
+              sudo chown www-data:www-data /var/www/html/index.html
+              sudo systemctl reload nginx
+            "
+            echo "✅ Web1 content updated"
+          else
+            echo "⚠️ web-apps/web1.html not found"
+          fi
+          
+          # Update web2 HTML
+          echo "📝 Updating Web2 HTML..."
+          if [ -f "web-apps/web2.html" ]; then
+            gcloud compute scp web-apps/web2.html web2-prod:~/web2.html --zone=europe-west1-b
+            gcloud compute ssh web2-prod --zone=europe-west1-b --command="
+              sudo rm -f /var/www/html/index.html
+              sudo cp ~/web2.html /var/www/html/index.html
+              sudo chown www-data:www-data /var/www/html/index.html
+              sudo systemctl reload nginx
+            "
+            echo "✅ Web2 content updated"
+          else
+            echo "⚠️ web-apps/web2.html not found"
+          fi
+          
+          # Update HAProxy HTML
+          echo "📝 Updating HAProxy HTML..."
+          if [ -f "web-apps/haproxy.html" ]; then
+            gcloud compute scp web-apps/haproxy.html haproxy-prod:~/haproxy.html --zone=europe-west1-b
+            gcloud compute ssh haproxy-prod --zone=europe-west1-b --command="
+              sudo cp ~/haproxy.html /var/www/html/index.html
+              sudo chown www-data:www-data /var/www/html/index.html
+            "
+            echo "✅ HAProxy content updated"
+          else
+            echo "⚠️ web-apps/haproxy.html not found"
+          fi
+          
           echo "✅ Content updated successfully"
         else
           echo "⚠️ Infrastructure not found, skipping content update"
