@@ -127,7 +127,7 @@ jobs:
       run: |
         cd infrastructure
         export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
-        terraform init
+        terraform init -upgrade
         
     - name: Destroy infrastructure
       if: env.INFRA_EXISTS == 'true' && env.CHECK_MODE != 'true'
@@ -138,7 +138,6 @@ jobs:
         echo "⏱️ This will take ~30 seconds..."
         
         START_TIME=$(date +%s)
-        terraform init -upgrade
         terraform destroy -auto-approve \
           -target=google_compute_instance.haproxy \
           -target=google_compute_instance.web1 \
