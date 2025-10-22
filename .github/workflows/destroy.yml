@@ -2,6 +2,9 @@ name: Destroy Infrastructure
 # Manual workflow for destroying infrastructure
 
 on:
+  push:
+    branches: [ develop ]
+    paths: [ '.github/workflows/destroy.yml' ]
   workflow_dispatch:  # Manual trigger only
     inputs:
       confirm_destroy:
@@ -25,12 +28,17 @@ jobs:
       
     - name: Confirm destruction
       run: |
-        if [ "${{ github.event.inputs.confirm_destroy }}" != "DESTROY" ]; then
+        if [ "${{ github.event_name }}" = "push" ]; then
+          echo "ℹ️  Push trigger detected - running in CHECK mode only"
+          echo "CHECK_MODE=true" >> $GITHUB_ENV
+        elif [ "${{ github.event.inputs.confirm_destroy }}" != "DESTROY" ]; then
           echo "❌ Destruction not confirmed. Please type 'DESTROY' to proceed."
           exit 1
+        else
+          echo "⚠️  DESTRUCTION CONFIRMED - This will destroy ALL infrastructure!"
+          echo "📋 Preserve static IPs: ${{ github.event.inputs.preserve_ips }}"
+          echo "CHECK_MODE=false" >> $GITHUB_ENV
         fi
-        echo "⚠️  DESTRUCTION CONFIRMED - This will destroy ALL infrastructure!"
-        echo "📋 Preserve static IPs: ${{ github.event.inputs.preserve_ips }}"
       
     - name: Setup Google Cloud CLI
       uses: google-github-actions/setup-gcloud@v2
@@ -122,12 +130,19 @@ jobs:
         terraform init
         
     - name: Destroy infrastructure
-      if: env.INFRA_EXISTS == 'true'
+      if: env.INFRA_EXISTS == 'true' && env.CHECK_MODE != 'true'
       run: |
         cd infrastructure
         export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
         echo "💥 Destroying infrastructure..."
         terraform destroy -auto-approve
+        
+    - name: Check mode - Skip destruction
+      if: env.CHECK_MODE == 'true'
+      run: |
+        echo "ℹ️  CHECK MODE: Skipping actual destruction"
+        echo "   This run was triggered by push to register workflow in UI"
+        echo "   Use manual trigger with 'DESTROY' confirmation for real destruction"
         
     - name: Verify destruction
       run: |
