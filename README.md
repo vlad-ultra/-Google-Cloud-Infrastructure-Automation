@@ -62,7 +62,7 @@ This project provides a complete **DevOps automation solution** for deploying an
    - Go to Actions → "Build and Deploy Infrastructure"
    - Click "Run workflow" → Select `prod` → Type `YES` → Run
 4. **Test your deployment**:
-   - Visit https://balancer.svdevops.tech
+   - Visit [https://balancer.svdevops.tech](https://balancer.svdevops.tech)
    - Check load balancing with the testing commands below
 
 ### Option 2: Local Deployment
@@ -98,8 +98,13 @@ gcloud services enable dns.googleapis.com
 #### 3. Deploy Infrastructure
 
 ```bash
-# Deploy with automatic content sync from web-apps/
+# Deploy infrastructure
 ./deploy.sh
+
+
+
+# Check health
+curl https://balancer.svdevops.tech
 ```
 
 The `deploy.sh` script automatically:
@@ -298,10 +303,10 @@ After deployment, the following URLs will be available for testing:
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| **Load Balancer** | https://balancer.svdevops.tech | Main entry point with load balancing |
-| **Web Server 1** | https://web1.svdevops.tech | Direct access to Web Server 1 |
-| **Web Server 2** | https://web2.svdevops.tech | Direct access to Web Server 2 |
-| **HAProxy Stats** | https://balancer.svdevops.tech/stats | Load balancer statistics dashboard |
+| **Load Balancer** | [https://balancer.svdevops.tech](https://balancer.svdevops.tech) | Main entry point with load balancing |
+| **Web Server 1** | [https://web1.svdevops.tech](https://web1.svdevops.tech) | Direct access to Web Server 1 |
+| **Web Server 2** | [https://web2.svdevops.tech](https://web2.svdevops.tech) | Direct access to Web Server 2 |
+| **HAProxy Stats** | [https://balancer.svdevops.tech/stats](https://balancer.svdevops.tech/stats) | Load balancer statistics dashboard |
 
 ### 🧪 Testing Commands
 
