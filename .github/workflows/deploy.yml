@@ -85,15 +85,15 @@ jobs:
           
           # Import instances if they exist
           if gcloud compute instances describe web1-prod --zone=europe-west1-b --quiet 2>/dev/null; then
-            terraform import google_compute_instance.web1_prod projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/web1-prod || true
+            terraform import google_compute_instance.web1 projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/web1-prod || true
           fi
           
           if gcloud compute instances describe web2-prod --zone=europe-west1-b --quiet 2>/dev/null; then
-            terraform import google_compute_instance.web2_prod projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/web2-prod || true
+            terraform import google_compute_instance.web2 projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/web2-prod || true
           fi
           
           if gcloud compute instances describe haproxy-prod --zone=europe-west1-b --quiet 2>/dev/null; then
-            terraform import google_compute_instance.haproxy_prod projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/haproxy-prod || true
+            terraform import google_compute_instance.haproxy projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/haproxy-prod || true
           fi
           
           echo "✅ Existing resources imported successfully"
