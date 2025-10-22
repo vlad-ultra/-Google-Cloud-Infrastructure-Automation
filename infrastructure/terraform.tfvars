@@ -10,9 +10,9 @@ zone   = "europe-west1-b"
 # Optional: Environment name
 environment = "prod"
 
-# Optional: Machine type - UPGRADED for faster deployment
-machine_type = "e2-standard-2"  # 2 vCPU, 4GB RAM - much faster than e2-micro
-machine_memory = 4  # 4GB RAM instead of default 8GB
+# Optional: Machine type - COST-EFFECTIVE for portfolio project
+machine_type = "e2-micro"  # 1 vCPU, 1GB RAM - cost-effective for portfolio project
+machine_memory = 1  # 1GB RAM for cost-effective portfolio project
 
 # Optional: Number of web servers (default: 2)
 web_server_count = 2

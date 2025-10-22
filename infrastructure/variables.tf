@@ -26,13 +26,13 @@ variable "environment" {
 variable "machine_type" {
   description = "Machine type for VMs"
   type        = string
-  default     = "e2-standard-2"  # 2 vCPU, 4GB RAM - much faster than e2-micro
+  default     = "e2-micro"  # 1 vCPU, 1GB RAM - cost-effective for portfolio project
 }
 
 variable "machine_memory" {
   description = "Machine memory in GB"
   type        = number
-  default     = 4  # 4GB RAM instead of default 8GB
+  default     = 1  # 1GB RAM for cost-effective portfolio project
 }
 
 variable "web_server_count" {

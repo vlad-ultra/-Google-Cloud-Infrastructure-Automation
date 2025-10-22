@@ -2,11 +2,12 @@
 
 ## 📋 Project Overview
 
-This project provides a complete **DevOps automation solution** for deploying and managing a highly available web infrastructure on Google Cloud Platform (GCP). The system features ultra-fast deployment using pre-configured images, centralized SSL certificate management, and automated load balancing.
+This project provides a complete **DevOps automation solution** for deploying and managing a highly available web infrastructure on Google Cloud Platform (GCP). The system features ultra-fast deployment using pre-configured images, cost-effective e2-micro instances, centralized SSL certificate management, and automated load balancing.
 
 ## ✨ Key Features
 
 - **⚡ Ultra-Fast Deployment** - Deploy infrastructure in ~30-60 seconds using pre-configured images
+- **💰 Cost-Effective** - Uses e2-micro instances (1 vCPU, 1GB RAM) for portfolio projects
 - **🔄 Automatic Content Sync** - Automatically applies HTML content from `web-apps/` directory
 - **🔐 Centralized SSL Management** - Manage Let's Encrypt certificates through Google Cloud Storage
 - **⚖️ Load Balancing** - HAProxy with health checks and SSL termination
@@ -322,7 +323,7 @@ gcloud compute ssh web1-prod --zone=europe-west1-b --command="sudo journalctl -u
 ## 📊 Performance
 
 - **Deployment Time:** ~30-60 seconds
-- **Server Type:** e2-standard-2 (2 vCPU, 4GB RAM)
+- **Server Type:** e2-micro (1 vCPU, 1GB RAM) - cost-effective for portfolio projects
 - **Load Balancing:** Round-robin with health checks
 - **SSL:** Let's Encrypt with automatic renewal
 
