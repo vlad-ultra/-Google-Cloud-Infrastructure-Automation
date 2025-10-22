@@ -79,6 +79,28 @@ jobs:
         export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
         terraform init -upgrade
         
+    - name: Import existing resources
+      if: env.INFRA_EXISTS == 'true' && env.CHECK_MODE != 'true'
+      run: |
+        cd infrastructure
+        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+        echo "🔄 Importing existing resources into Terraform state..."
+        
+        # Import instances if they exist
+        if gcloud compute instances describe web1-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+          terraform import google_compute_instance.web1 projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/web1-prod || true
+        fi
+        
+        if gcloud compute instances describe web2-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+          terraform import google_compute_instance.web2 projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/web2-prod || true
+        fi
+        
+        if gcloud compute instances describe haproxy-prod --zone=europe-west1-b --quiet 2>/dev/null; then
+          terraform import google_compute_instance.haproxy projects/${{ secrets.GCP_PROJECT_ID }}/zones/europe-west1-b/instances/haproxy-prod || true
+        fi
+        
+        echo "✅ Existing resources imported successfully"
+        
     - name: Destroy infrastructure
       if: env.INFRA_EXISTS == 'true' && env.CHECK_MODE != 'true'
       run: |
