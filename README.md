@@ -88,17 +88,19 @@ To update content, simply:
 2. Run `./deploy.sh` again
 3. Choose option 2 to update content only
 
+### 5. Test Load Balancing
+
+```bash
+# Test load balancing functionality
+./scripts/testing/test-load-balancing.sh
+```
+
 ## 📁 Project Structure
 
 ```
 📁 GoogleCloud/first-project/
-├── 🚀 deploy.sh                    # Main deployment script
-├── 🗑️ destroy-infrastructure.sh    # Infrastructure destruction
-├── 🔧 apply-configs.sh             # Apply configurations
-├── 🔄 test-load-balancing.sh       # Load balancing tests
-├── 🖼️ create-new-images.sh         # Create custom images
-├── 🔧 restore-configs.sh           # Restore configurations
-├── 🔐 ssl.sh                       # SSL management
+├── 🚀 deploy.sh                    # Main deployment script with content sync
+├── 🗑️ destroy.sh                   # Infrastructure destruction wrapper
 ├── 📁 infrastructure/              # Terraform configurations
 │   ├── main.tf                     # Main Terraform config
 │   ├── variables.tf                # Variables
@@ -108,25 +110,36 @@ To update content, simply:
 │   ├── static-ips.tf               # Static IP addresses
 │   ├── static-internal-ips.tf      # Internal IP addresses
 │   └── firewall.tf                 # Firewall rules
-├── 📁 scripts/                     # Utility scripts
-│   ├── configure-haproxy.sh        # HAProxy configuration
-│   └── update-content.sh           # Content updates
-├── 📁 ssl-management/              # SSL certificate management
-│   ├── ssl-manager.sh              # Interactive SSL manager
-│   ├── export-certs-to-gcs.sh      # Export certificates to GCS
-│   ├── import-certs-from-gcs.sh    # Import certificates from GCS
-│   └── create-images-with-gcs-certs.sh # Create images with GCS certs
+├── 📁 scripts/                     # Organized utility scripts
+│   ├── deployment/                 # Deployment scripts
+│   │   ├── deploy.sh              # Core deployment logic
+│   │   ├── destroy-infrastructure.sh # Infrastructure destruction
+│   │   └── ultra-fast-deploy.sh   # Fast deployment option
+│   ├── management/                 # Management scripts
+│   │   ├── apply-configs.sh       # Apply configurations
+│   │   ├── create-new-images.sh   # Create custom images
+│   │   └── restore-configs.sh     # Restore configurations
+│   ├── ssl/                       # SSL certificate management
+│   │   ├── ssl-manager.sh         # Interactive SSL manager
+│   │   ├── export-certs-to-gcs.sh # Export certificates to GCS
+│   │   ├── import-certs-from-gcs.sh # Import certificates from GCS
+│   │   ├── create-images-with-gcs-certs.sh # Create images with GCS certs
+│   │   └── ssl.sh                 # SSL wrapper script
+│   ├── testing/                   # Testing scripts
+│   │   └── test-load-balancing.sh # Load balancing tests
+│   ├── configure-haproxy.sh       # HAProxy configuration
+│   └── update-content.sh          # Content updates
+├── 📁 web-apps/                    # Web server content (auto-synced)
+│   ├── web1.html                   # Web1 HTML content
+│   ├── web2.html                   # Web2 HTML content
+│   └── haproxy.html                # HAProxy dashboard content
 ├── 📁 backups/                     # Configuration backups
 │   └── current-state/              # Current state backups
 │       ├── haproxy.cfg             # HAProxy configuration
 │       ├── web1-nginx.conf         # Web1 Nginx configuration
 │       ├── web2-nginx.conf         # Web2 Nginx configuration
-│       ├── web1-content.html       # Web1 content
-│       └── web2-content.html       # Web2 content
-├── 📁 web-apps/                    # Web server content
-│   ├── web1.html                   # Web1 HTML content
-│   ├── web2.html                   # Web2 HTML content
-│   └── haproxy.html                # HAProxy content
+│       ├── web1-content.html       # Web1 content backup
+│       └── web2-content.html        # Web2 content backup
 └── 📄 README.md                    # This file
 ```
 
@@ -136,22 +149,39 @@ To update content, simply:
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
-| `deploy.sh` | Deploy infrastructure + apply content from web-apps/ | `./deploy.sh` |
+| `deploy.sh` | Deploy infrastructure + auto-sync content from web-apps/ | `./deploy.sh` |
 | `destroy.sh` | Destroy infrastructure (preserves static IPs) | `./destroy.sh` |
-| `test.sh` | Test load balancing functionality | `./test.sh` |
 
-### Image Management
-
-| Script | Purpose | Usage |
-|--------|---------|-------|
-| `create-new-images.sh` | Create new images with current configurations | `./create-new-images.sh` |
-| `ssl.sh` | Interactive SSL management | `./ssl.sh` |
-
-### Configuration Management
+### Deployment Scripts
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
-| `restore-configs.sh` | Restore configurations from backups | `./restore-configs.sh` |
+| `scripts/deployment/deploy.sh` | Core deployment logic with content sync | `./scripts/deployment/deploy.sh` |
+| `scripts/deployment/destroy-infrastructure.sh` | Infrastructure destruction | `./scripts/deployment/destroy-infrastructure.sh` |
+| `scripts/deployment/ultra-fast-deploy.sh` | Fast deployment option | `./scripts/deployment/ultra-fast-deploy.sh` |
+
+### Management Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `scripts/management/apply-configs.sh` | Apply configurations to existing servers | `./scripts/management/apply-configs.sh` |
+| `scripts/management/create-new-images.sh` | Create new images with current configurations | `./scripts/management/create-new-images.sh` |
+| `scripts/management/restore-configs.sh` | Restore configurations from backups | `./scripts/management/restore-configs.sh` |
+
+### SSL Management
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `scripts/ssl/ssl-manager.sh` | Interactive SSL management | `./scripts/ssl/ssl-manager.sh` |
+| `scripts/ssl/ssl.sh` | SSL wrapper script | `./scripts/ssl/ssl.sh` |
+| `scripts/ssl/export-certs-to-gcs.sh` | Export certificates to GCS | `./scripts/ssl/export-certs-to-gcs.sh` |
+| `scripts/ssl/import-certs-from-gcs.sh` | Import certificates from GCS | `./scripts/ssl/import-certs-from-gcs.sh` |
+
+### Testing Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `scripts/testing/test-load-balancing.sh` | Test load balancing functionality | `./scripts/testing/test-load-balancing.sh` |
 
 ## 🔐 SSL Certificate Management
 
@@ -159,14 +189,14 @@ To update content, simply:
 
 ```bash
 # Interactive SSL management
-./ssl.sh
+./scripts/ssl/ssl.sh
 ```
 
 ### Manual SSL Operations
 
 ```bash
 # Export certificates to GCS
-cd ssl-management
+cd scripts/ssl
 ./export-certs-to-gcs.sh
 
 # Import certificates from GCS
@@ -182,12 +212,12 @@ cd ssl-management
 
 1. **Apply current configurations:**
    ```bash
-   ./apply-configs.sh
+   ./scripts/management/apply-configs.sh
    ```
 
 2. **Create new images:**
    ```bash
-   ./create-new-images.sh
+   ./scripts/management/create-new-images.sh
    ```
 
 3. **Update Terraform to use new images:**
@@ -212,14 +242,14 @@ cd ssl-management
 
 ```bash
 # Restore from backups
-./restore-configs.sh
+./scripts/management/restore-configs.sh
 ```
 
 ### Apply Custom Configurations
 
 ```bash
 # Apply configurations to existing servers
-./apply-configs.sh
+./scripts/management/apply-configs.sh
 ```
 
 ## 🌐 URLs and Access
@@ -230,6 +260,31 @@ After deployment, the following URLs will be available:
 - **Web Server 1:** https://web1.svdevops.tech
 - **Web Server 2:** https://web2.svdevops.tech
 - **HAProxy Stats:** http://[HAProxy_IP]:8080/stats
+
+## 🔄 Content Synchronization
+
+### Automatic Content Sync
+
+The `deploy.sh` script automatically applies content from the `web-apps/` directory to all servers:
+
+- **web1.html** → Web Server 1
+- **web2.html** → Web Server 2  
+- **haproxy.html** → HAProxy dashboard
+
+### Manual Content Update
+
+To update content without redeploying infrastructure:
+
+```bash
+# Update content on all servers
+./scripts/update-content.sh
+```
+
+### Content Workflow
+
+1. **Edit HTML files** in `web-apps/` directory
+2. **Run deploy script** - content is automatically applied
+3. **Test changes** using the testing scripts
 
 ## 🔧 Troubleshooting
 
