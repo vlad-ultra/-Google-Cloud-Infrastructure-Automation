@@ -69,5 +69,6 @@ venv/
 ENV/
 
 # Local configuration overrides
+terraform.tfvars
 terraform.tfvars.local
 config.local.json
