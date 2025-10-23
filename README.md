@@ -10,11 +10,11 @@
 
 ## 📋 Project Overview
 
-This project provides a complete **DevOps automation solution** for deploying and managing a highly available web infrastructure on Google Cloud Platform (GCP). The system features ultra-fast deployment using pre-configured images, cost-effective e2-micro instances, centralized SSL certificate management, and automated load balancing.
+This project provides a complete **DevOps automation solution** for deploying and managing a highly available web infrastructure on Google Cloud Platform (GCP). The system features fast deployment using pre-configured images, cost-effective e2-micro instances, centralized SSL certificate management, and automated load balancing.
 
 ## ✨ Key Features
 
-- **⚡ Ultra-Fast Deployment** - Deploy infrastructure in ~30-60 seconds using pre-configured images
+- **⚡ Ultra-Fast Deployment** - Deploy infrastructure in ~3 minutes 30 seconds using GitHub Actions Runner with pre-configured images
 - **💰 Cost-Effective** - Uses e2-micro instances (1 vCPU, 1GB RAM) for portfolio projects
 - **🔄 Automatic Content Sync** - Automatically applies HTML content from `web-apps/` directory
 - **🔐 Centralized SSL Management** - Manage Let's Encrypt certificates through Google Cloud Storage
@@ -56,13 +56,13 @@ This project uses **GitHub Actions** for automated deployment and management. Al
 
 #### Available Workflows
 
-| Workflow | Purpose | Trigger |
-|----------|---------|---------|
-| **🚀 Build and Deploy Infrastructure** | Deploy/update infrastructure with content sync | Manual |
-| **🗑️ Destroy Infrastructure** | Destroy infrastructure (preserves static IPs) | Manual |
-| **🧪 Test Infrastructure** | Comprehensive infrastructure testing | Manual |
-| **📊 Monitor Infrastructure** | Health checks and monitoring | Manual |
-| **🔄 Update Content** | Update web content without redeployment | Manual |
+| Workflow | Purpose | What It Does |
+|----------|---------|--------------|
+| **🚀 Build and Deploy Infrastructure** | Deploy/update infrastructure with content sync | Creates/updates GCP infrastructure using Terraform, imports existing resources, applies content from `web-apps/`, configures HAProxy with load balancing |
+| **🗑️ Destroy Infrastructure** | Destroy infrastructure (preserves static IPs) | Safely destroys all instances and firewall rules while preserving static IP addresses for future use |
+| **📊 Monitor Infrastructure** | Health checks and monitoring | Checks instance status, tests all domains (load balancer, web1, web2, stats), provides health report |
+| **🔄 Update Content** | Update web content without redeployment | Updates HTML content on all servers without touching infrastructure, restarts services |
+| **🐛 Debug Authentication** | Troubleshoot GCP authentication issues | Tests different authentication methods, provides debug information for setup issues |
 
 #### How to Deploy
 
@@ -78,36 +78,47 @@ This project uses **GitHub Actions** for automated deployment and management. Al
 
 3. **Monitor deployment**:
    - Watch the workflow progress in real-time
-   - Deployment takes ~30-60 seconds
+   - **Wait approximately 3-4 minutes** for complete infrastructure deployment
+   - GitHub Actions Runner completes deployment in ~3 minutes 30 seconds
    - All content from `web-apps/` is automatically applied
 
-#### Test Your Deployment
+#### How to Shut Down After Testing
 
-After deployment, test these URLs:
+1. **Go to GitHub Actions**:
+   - Navigate to Actions tab in this repository
+   - Select "🗑️ Destroy Infrastructure"
+   - Click "Run workflow"
+
+2. **Configure destruction**:
+   - Type `DESTROY` to confirm
+   - Keep "Preserve static IP addresses" checked (recommended)
+   - Click "Run workflow"
+
+3. **Verify shutdown**:
+   - **Wait approximately 3-4 minutes** for complete infrastructure destruction
+   - Workflow will destroy all instances, networks, and firewall rules
+   - Static IPs are preserved for future deployments
+   - Cost is eliminated (only static IPs remain)
+
+#### Verify Your Deployment
+
+After deployment, check these URLs:
 
 - **Load Balancer**: [https://balancer.svdevops.tech](https://balancer.svdevops.tech)
 - **Web Server 1**: [https://web1.svdevops.tech](https://web1.svdevops.tech)
 - **Web Server 2**: [https://web2.svdevops.tech](https://web2.svdevops.tech)
 - **HAProxy Stats**: [https://balancer.svdevops.tech/stats](https://balancer.svdevops.tech/stats)
 
-#### Load Balancing Test
+#### Load Balancing Verification
 
 ```bash
-# Test load balancing (should alternate between Web1 and Web2)
+# Check load balancing (should alternate between Web1 and Web2)
 for i in {1..10}; do
   echo "Request $i:"
   curl -s https://balancer.svdevops.tech | grep -o "Web Server [12]"
   sleep 1
 done
 ```
-
-#### Update Content
-
-To update web content:
-1. Edit HTML files in `web-apps/` directory
-2. Commit and push to `production` branch
-3. Run "🔄 Update Content" workflow
-4. Content is automatically applied to all servers
 
 ## 📁 Project Structure
 
@@ -159,11 +170,11 @@ To update web content:
 | **Web Server 2** | [https://web2.svdevops.tech](https://web2.svdevops.tech) | Direct access to Web Server 2 |
 | **HAProxy Stats** | [https://balancer.svdevops.tech/stats](https://balancer.svdevops.tech/stats) | Load balancer statistics dashboard |
 
-### 🧪 Testing Commands
+### 🔍 Verification Commands
 
-#### Test Load Balancing
+#### Check Load Balancing
 ```bash
-# Test load balancing (should alternate between Web1 and Web2)
+# Check load balancing (should alternate between Web1 and Web2)
 for i in {1..10}; do
   echo "Request $i:"
   curl -s https://balancer.svdevops.tech | grep -o "Web Server [12]"
@@ -171,38 +182,38 @@ for i in {1..10}; do
 done
 ```
 
-#### Test Individual Servers
+#### Check Individual Servers
 ```bash
-# Test Web Server 1 directly
+# Check Web Server 1 directly
 curl -s https://web1.svdevops.tech
 
-# Test Web Server 2 directly  
+# Check Web Server 2 directly  
 curl -s https://web2.svdevops.tech
 
-# Test HAProxy stats
+# Check HAProxy stats
 curl -s https://balancer.svdevops.tech/stats
 ```
 
-#### Test SSL Certificates
+#### Check SSL Certificates
 ```bash
 # Check SSL certificate validity
 openssl s_client -connect balancer.svdevops.tech:443 -servername balancer.svdevops.tech < /dev/null 2>/dev/null | openssl x509 -noout -dates
 
-# Test HTTPS redirect
+# Check HTTPS redirect
 curl -I http://balancer.svdevops.tech
 # Should return 301 redirect to HTTPS
 ```
 
-#### Test Health Checks
+#### Check Health Status
 ```bash
 # Check if all services are responding
-echo "Testing all endpoints..."
+echo "Checking all endpoints..."
 curl -s -o /dev/null -w "Load Balancer: %{http_code}\n" https://balancer.svdevops.tech
 curl -s -o /dev/null -w "Web1: %{http_code}\n" https://web1.svdevops.tech  
 curl -s -o /dev/null -w "Web2: %{http_code}\n" https://web2.svdevops.tech
 ```
 
-### 📊 Expected Test Results
+### 📊 Expected Results
 
 - **Load Balancer**: Should return alternating "Web Server 1" and "Web Server 2" responses
 - **Individual Servers**: Should return consistent "Web Server 1" or "Web Server 2" respectively
@@ -237,31 +248,29 @@ To update content without redeploying infrastructure:
 - **Authentication**: Google Cloud service account
 - **Infrastructure**: Terraform deployment with existing resource import
 - **Content Sync**: Automatic application of `web-apps/` content
-- **Testing**: Load balancing verification
-- **Time**: ~30-60 seconds deployment
-
-#### 🧪 Test Infrastructure
-- **Connectivity Tests**: HTTP/HTTPS for all servers
-- **Load Balancing Tests**: Round-robin verification
-- **Domain Tests**: Full domain connectivity testing
-- **Health Checks**: Instance status verification
-- **Test Types**: `connectivity`, `full`, `quick`
+- **Load Balancing**: Configures HAProxy with round-robin
+- **Time**: ~3 minutes 30 seconds deployment via GitHub Actions Runner
 
 #### 🗑️ Destroy Infrastructure
 - **Safe Destruction**: Preserves static IPs and custom images
 - **Verification**: Confirms complete removal
-- **Error Handling**: Shows red status on failures
+- **Cost Savings**: Eliminates compute costs while preserving IPs
 
 #### 📊 Monitor Infrastructure
 - **Health Checks**: Instance and service status
-- **Domain Testing**: All production URLs
+- **Domain Testing**: All production URLs (load balancer, web1, web2, stats)
 - **Alerting**: Notifications on failures
 - **Reporting**: Detailed status reports
 
 #### 🔄 Update Content
 - **Content Sync**: Updates web content only
 - **No Infrastructure Changes**: Preserves existing setup
-- **Fast Updates**: Quick content deployment
+- **Fast Updates**: Quick content deployment without redeployment
+
+#### 🐛 Debug Authentication
+- **Troubleshooting**: Tests different authentication methods
+- **Environment Check**: Verifies GitHub secrets and GCP setup
+- **Debug Info**: Provides detailed diagnostic information
 
 ### 🛠️ Setup Required
 
@@ -288,29 +297,27 @@ To update content without redeploying infrastructure:
    - Type `YES` to confirm
    - Click "Run workflow"
 
-2. **Test Infrastructure**:
-   - Go to Actions → "🧪 Test Infrastructure"
-   - Click "Run workflow"
-   - Select test type: `connectivity`, `full`, or `quick`
-   - Select environment: `prod`
-   - Click "Run workflow"
-
-3. **Update Content**:
+2. **Update Content**:
    - Go to Actions → "🔄 Update Content"
    - Click "Run workflow"
    - Content is automatically updated
 
-4. **Monitor Infrastructure**:
+3. **Monitor Infrastructure**:
    - Go to Actions → "📊 Monitor Infrastructure"
    - Click "Run workflow"
    - View health status and reports
 
-5. **Remove Infrastructure**:
+4. **Remove Infrastructure**:
    - Go to Actions → "🗑️ Destroy Infrastructure"
    - Click "Run workflow"
    - Type `DESTROY` to confirm
    - Choose whether to preserve IPs
    - Click "Run workflow"
+
+5. **Debug Issues** (if needed):
+   - Go to Actions → "🐛 Debug Authentication"
+   - Click "Run workflow"
+   - Review debug information for troubleshooting
 
 ## 💡 Usage Examples
 
@@ -332,7 +339,7 @@ Showcase automated deployment:
 3. **Trigger deployment** via GitHub Actions
 4. **Verify changes** are live automatically
 
-### 🧪 Load Balancing Demo
+### ⚖️ Load Balancing Demo
 
 Demonstrate high availability:
 
@@ -367,7 +374,7 @@ curl -s -o /dev/null -w "Web2: %{http_code}\n" https://web2.svdevops.tech
    - Verify firewall rules are correct
 
 2. **SSL certificates not working**:
-   - Check certificate status via Test workflow
+   - Check certificate status via Monitor workflow
    - Verify DNS records are correct
 
 3. **Web servers not responding**:
@@ -390,7 +397,7 @@ curl -s -o /dev/null -w "Web2: %{http_code}\n" https://web2.svdevops.tech
 
 ## 📊 Performance
 
-- **Deployment Time**: ~30-60 seconds
+- **Deployment Time**: ~3 minutes 30 seconds (GitHub Actions Runner)
 - **Server Type**: e2-micro (1 vCPU, 1GB RAM) - cost-effective for portfolio projects
 - **Load Balancing**: Round-robin with health checks
 - **SSL**: Let's Encrypt with automatic renewal
