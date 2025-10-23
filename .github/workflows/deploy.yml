@@ -97,6 +97,13 @@ jobs:
       run: |
         cd infrastructure
         export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+        export TF_VAR_project_id=${{ secrets.GCP_PROJECT_ID }}
+        export TF_VAR_region=europe-west1
+        export TF_VAR_zone=europe-west1-b
+        export TF_VAR_environment=prod
+        export TF_VAR_machine_type=e2-micro
+        export TF_VAR_web_server_ips='["10.132.15.221", "10.132.15.222"]'
+        export TF_VAR_haproxy_ip=10.132.15.223
         if [ "$EXISTING_INFRA" = "true" ]; then
           echo "🔄 Importing existing resources into Terraform state..."
           
@@ -176,10 +183,10 @@ jobs:
           
           # Apply any changes after import
           echo "🔄 Applying any changes after import..."
-          terraform apply -auto-approve
+          terraform apply -auto-approve -var="project_id=${{ secrets.GCP_PROJECT_ID }}" -var="region=europe-west1" -var="zone=europe-west1-b" -var="environment=prod" -var="machine_type=e2-micro" -var="web_server_ips=[\"10.132.15.221\", \"10.132.15.222\"]" -var="haproxy_ip=10.132.15.223"
         else
           echo "🆕 Applying new infrastructure..."
-          terraform apply -auto-approve
+          terraform apply -auto-approve -var="project_id=${{ secrets.GCP_PROJECT_ID }}" -var="region=europe-west1" -var="zone=europe-west1-b" -var="environment=prod" -var="machine_type=e2-micro" -var="web_server_ips=[\"10.132.15.221\", \"10.132.15.222\"]" -var="haproxy_ip=10.132.15.223"
         fi
         
     - name: Verify infrastructure status
