@@ -45,10 +45,6 @@ jobs:
         gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
         echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json" >> $GITHUB_ENV
         
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: 1.6.0
         
     - name: Check existing infrastructure
       run: |
@@ -63,43 +59,54 @@ jobs:
           echo "INFRA_EXISTS=false" >> $GITHUB_ENV
         fi
         
-    - name: Initialize Terraform
-      if: env.INFRA_EXISTS == 'true'
-      run: |
-        cd infrastructure
-        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
-        echo "🏗️ Initializing Terraform..."
-        terraform init -upgrade
-        
     - name: Destroy infrastructure
       if: env.INFRA_EXISTS == 'true'
       run: |
-        cd infrastructure
-        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
-        echo "🗑️ Destroying infrastructure using Terraform (preserving static IPs)..."
+        echo "🗑️ Destroying infrastructure using gcloud commands (preserving static IPs)..."
         echo "⏱️ This will take ~30 seconds..."
         
         START_TIME=$(date +%s)
+        DESTROY_ERRORS=0
         
-        # Destroy infrastructure using terraform with specific targets (preserve static IPs)
-        terraform destroy -auto-approve \
-          -target=google_compute_instance.haproxy \
-          -target=google_compute_instance.web1 \
-          -target=google_compute_instance.web2 \
-          -target=google_compute_firewall.allow_http \
-          -target=google_compute_firewall.allow_https \
-          -target=google_compute_firewall.allow_ssh \
-          -target=google_compute_firewall.allow_haproxy_lb \
-          -target=google_compute_firewall.allow_haproxy_web1 \
-          -target=google_compute_firewall.allow_haproxy_web2 \
-          -target=google_compute_firewall.allow_haproxy_stats \
-          -target=google_compute_firewall.allow_haproxy_stats_page || true
+        # Destroy instances directly with gcloud
+        echo "🔄 Destroying instances..."
+        for instance in web1-prod web2-prod haproxy-prod; do
+          if gcloud compute instances describe $instance --zone=europe-west1-b --quiet 2>/dev/null; then
+            echo "🗑️ Destroying $instance..."
+            if ! gcloud compute instances delete $instance --zone=europe-west1-b --quiet; then
+              echo "❌ Failed to destroy $instance"
+              DESTROY_ERRORS=$((DESTROY_ERRORS + 1))
+            else
+              echo "✅ Successfully destroyed $instance"
+            fi
+          fi
+        done
+        
+        # Destroy firewall rules
+        echo "🔄 Destroying firewall rules..."
+        for firewall in allow-http-prod allow-https-prod allow-ssh-prod allow-haproxy-lb-prod allow-haproxy-web1-prod allow-haproxy-web2-prod allow-haproxy-stats-prod allow-haproxy-stats-page-prod; do
+          if gcloud compute firewall-rules describe $firewall --quiet 2>/dev/null; then
+            echo "🗑️ Destroying $firewall..."
+            if ! gcloud compute firewall-rules delete $firewall --quiet; then
+              echo "❌ Failed to destroy $firewall"
+              DESTROY_ERRORS=$((DESTROY_ERRORS + 1))
+            else
+              echo "✅ Successfully destroyed $firewall"
+            fi
+          fi
+        done
         
         END_TIME=$(date +%s)
         DESTROY_TIME=$((END_TIME - START_TIME))
         
         echo "⏱️ Total destroy time: ${DESTROY_TIME} seconds"
-        echo "✅ Infrastructure destroyed successfully (static IPs preserved)"
+        
+        if [ $DESTROY_ERRORS -gt 0 ]; then
+          echo "❌ Destroy completed with $DESTROY_ERRORS errors"
+          exit 1
+        else
+          echo "✅ Destroy completed successfully"
+        fi
         
     - name: Verify destruction
       run: |
