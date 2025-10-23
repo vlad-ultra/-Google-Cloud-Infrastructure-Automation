@@ -69,6 +69,13 @@ jobs:
       run: |
         cd infrastructure
         export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+        export TF_VAR_project_id=${{ secrets.GCP_PROJECT_ID }}
+        export TF_VAR_region=europe-west1
+        export TF_VAR_zone=europe-west1-b
+        export TF_VAR_environment=prod
+        export TF_VAR_machine_type=e2-micro
+        export TF_VAR_web_server_ips='["10.132.15.221", "10.132.15.222"]'
+        export TF_VAR_haproxy_ip=10.132.15.223
         echo "🏗️ Initializing Terraform..."
         terraform init -upgrade
         
@@ -77,6 +84,13 @@ jobs:
       run: |
         cd infrastructure
         export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+        export TF_VAR_project_id=${{ secrets.GCP_PROJECT_ID }}
+        export TF_VAR_region=europe-west1
+        export TF_VAR_zone=europe-west1-b
+        export TF_VAR_environment=prod
+        export TF_VAR_machine_type=e2-micro
+        export TF_VAR_web_server_ips='["10.132.15.221", "10.132.15.222"]'
+        export TF_VAR_haproxy_ip=10.132.15.223
         echo "🔄 Importing existing resources into Terraform state..."
         
         # Import instances if they exist
