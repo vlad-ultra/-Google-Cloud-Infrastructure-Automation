@@ -1,0 +1,29 @@
+name: Local portfolio demo
+on:
+  pull_request:
+    paths: ['demos/load-balancer/**', 'web-apps/web1.html', 'web-apps/web2.html', '.github/workflows/local-portfolio-demo.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  routing-and-failover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start isolated local demo
+        working-directory: demos/load-balancer
+        run: docker compose up -d --wait
+      - name: Test routing, failover and recovery
+        working-directory: demos/load-balancer
+        run: python3 verify.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-balancer-validation
+          path: demos/load-balancer/validation.json
+          if-no-files-found: ignore
+      - name: Stop demo containers
+        if: always()
+        working-directory: demos/load-balancer
+        run: docker compose down

@@ -1,3 +1,5 @@
+> **Portfolio status:** The original cloud servers have been retired. For a runnable demonstration without a cloud account, use the [local load-balancer demo](demos/load-balancer/README.md) or the [HTTPS, monitoring and backup/restore lab](demos/operations/README.md). These local labs do not validate a current GCP deployment.
+
 # 🚀 Google Cloud Infrastructure Automation
 
 > **Professional DevOps automation solution for deploying highly available web infrastructure on Google Cloud Platform**

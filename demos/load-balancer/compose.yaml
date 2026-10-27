@@ -1,0 +1,33 @@
+name: portfolio-loadbalancer
+services:
+  web1:
+    image: nginx:1.28.0-alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../../web-apps/web1.html:/usr/share/nginx/html/index.html:ro
+    environment:
+      NODE_LABEL: web1
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1/healthz || exit 1']
+      interval: 2s
+      timeout: 2s
+      retries: 10
+  web2:
+    image: nginx:1.28.0-alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../../web-apps/web2.html:/usr/share/nginx/html/index.html:ro
+    environment:
+      NODE_LABEL: web2
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1/healthz || exit 1']
+      interval: 2s
+      timeout: 2s
+      retries: 10
+  proxy:
+    image: haproxy:3.0.12-alpine
+    ports: ['127.0.0.1:8088:8080']
+    volumes: ['./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro']
+    depends_on:
+      web1: {condition: service_healthy}
+      web2: {condition: service_healthy}

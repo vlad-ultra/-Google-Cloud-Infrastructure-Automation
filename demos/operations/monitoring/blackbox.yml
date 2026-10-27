@@ -1,0 +1,9 @@
+modules:
+  https_ready:
+    prober: http
+    timeout: 5s
+    http:
+      preferred_ip_protocol: ip4
+      valid_status_codes: [200]
+      tls_config:
+        ca_file: /certs/server.crt

@@ -1,0 +1,55 @@
+{
+  "scope": "local Compose demo; does not validate retired GCP infrastructure",
+  "checks": [
+    {
+      "name": "Round-robin across two servers",
+      "result": "PASS",
+      "observed_backends": [
+        "web2",
+        "web1",
+        "web2",
+        "web1",
+        "web2",
+        "web1",
+        "web2",
+        "web1",
+        "web2",
+        "web1"
+      ]
+    },
+    {
+      "name": "Failover with web1 stopped",
+      "result": "PASS",
+      "observed_backends": [
+        "web2",
+        "web2",
+        "web2",
+        "web2",
+        "web2",
+        "web2",
+        "web2",
+        "web2",
+        "web2",
+        "web2"
+      ]
+    },
+    {
+      "name": "Both servers after recovery",
+      "result": "PASS",
+      "observed_backends": [
+        "web2",
+        "web1",
+        "web2",
+        "web1",
+        "web2",
+        "web1",
+        "web2",
+        "web1",
+        "web2",
+        "web1"
+      ]
+    }
+  ],
+  "status": "PASS",
+  "checked_at_utc": "2026-10-27T12:14:12.423194+00:00"
+}
