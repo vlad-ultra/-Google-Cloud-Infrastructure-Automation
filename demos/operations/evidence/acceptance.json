@@ -1,0 +1,58 @@
+{
+  "environment": "local Docker Desktop lab",
+  "checks": [
+    {
+      "check": "HTTPS with certificate validation",
+      "result": "PASS",
+      "details": "HTTP 200, certificate trusted via lab CA and hostname verified"
+    },
+    {
+      "check": "Initial monitoring",
+      "result": "PASS",
+      "details": "Prometheus reports probe_success=1"
+    },
+    {
+      "check": "Saved dashboard",
+      "result": "PASS",
+      "details": {
+        "uid": "infra-lab-restore-proof",
+        "marker": "20261027T111352Z"
+      }
+    },
+    {
+      "check": "Controlled failure detected",
+      "result": "PASS",
+      "details": "Stopped application; Prometheus reports probe_success=0"
+    },
+    {
+      "check": "Recovery detected",
+      "result": "PASS",
+      "details": "Restarted application; Prometheus reports probe_success=1"
+    },
+    {
+      "check": "Cold backup",
+      "result": "PASS",
+      "details": {
+        "file": "grafana-20261027T111421Z.tar.gz",
+        "bytes": 22913369
+      }
+    },
+    {
+      "check": "Restore into new volume",
+      "result": "PASS",
+      "details": {
+        "volume": "devops-demo-restore-20261027t111352z",
+        "dashboard_uid": "infra-lab-restore-proof",
+        "marker_preserved": true,
+        "authenticated_login": true
+      }
+    },
+    {
+      "check": "Original environment restored",
+      "result": "PASS",
+      "details": "Grafana uses original volume; HTTPS probe is healthy"
+    }
+  ],
+  "status": "PASS",
+  "checked_at_utc": "2026-10-27T11:14:32.283494+00:00"
+}
